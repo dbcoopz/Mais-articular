@@ -27,17 +27,20 @@ export const Billing: React.FC = () => {
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
 
-  // Metrics setup
+  // Metrics setup - Updated Colors to match Dashboard style (Blue Brand)
   let metric1, metric2, metric3;
+  
+  // Using bg-blue-50 for all icons to maintain consistency with dashboard
+  const iconBgClass = "bg-blue-50 text-[#1e3a5f]";
 
   if (isAdmin) {
       const totalRevenue = monthSessions.reduce((acc, s) => acc + s.cost, 0);
       const totalTherapistCost = monthSessions.reduce((acc, s) => acc + s.therapistPayment, 0);
       const profit = totalRevenue - totalTherapistCost;
 
-      metric1 = { id: 'revenue', title: 'Receita Total', value: `€${totalRevenue.toFixed(2)}`, icon: Euro, color: 'bg-green-100 text-green-600', subtitle: 'Receita da clínica' };
-      metric2 = { id: 'payments', title: 'Pagamentos a Terapeutas', value: `€${totalTherapistCost.toFixed(2)}`, icon: TrendingDown, color: 'bg-red-100 text-red-600', subtitle: 'Custos operacionais' };
-      metric3 = { id: 'profit', title: 'Lucro Líquido', value: `€${profit.toFixed(2)}`, icon: TrendingUp, color: 'bg-blue-100 text-blue-600', subtitle: 'Após pagamentos' };
+      metric1 = { id: 'revenue', title: 'Receita Total', value: `€${totalRevenue.toFixed(2)}`, icon: Euro, color: iconBgClass, subtitle: 'Receita da clínica' };
+      metric2 = { id: 'payments', title: 'Pagamentos a Terapeutas', value: `€${totalTherapistCost.toFixed(2)}`, icon: TrendingDown, color: iconBgClass, subtitle: 'Custos operacionais' };
+      metric3 = { id: 'profit', title: 'Lucro Líquido', value: `€${profit.toFixed(2)}`, icon: TrendingUp, color: iconBgClass, subtitle: 'Após pagamentos' };
   } else {
       const myEarnings = monthSessions.reduce((acc, s) => acc + s.therapistPayment, 0);
       const sessionCount = monthSessions.length;
@@ -45,9 +48,9 @@ export const Billing: React.FC = () => {
       const hours = Math.floor(totalMinutes / 60);
       const mins = totalMinutes % 60;
 
-      metric1 = { id: 'earnings', title: 'Meus Ganhos', value: `€${myEarnings.toFixed(2)}`, icon: Euro, color: 'bg-green-100 text-green-600', subtitle: 'Este mês' };
-      metric2 = { id: 'sessions', title: 'Sessões Realizadas', value: sessionCount.toString(), icon: MessageSquare, color: 'bg-purple-100 text-purple-600', subtitle: 'Total de consultas' };
-      metric3 = { id: 'duration', title: 'Duração Total', value: `${hours}h ${mins}m`, icon: Clock, color: 'bg-orange-100 text-orange-600', subtitle: 'Horas de terapia' };
+      metric1 = { id: 'earnings', title: 'Meus Ganhos', value: `€${myEarnings.toFixed(2)}`, icon: Euro, color: iconBgClass, subtitle: 'Este mês' };
+      metric2 = { id: 'sessions', title: 'Sessões Realizadas', value: sessionCount.toString(), icon: MessageSquare, color: iconBgClass, subtitle: 'Total de consultas' };
+      metric3 = { id: 'duration', title: 'Duração Total', value: `${hours}h ${mins}m`, icon: Clock, color: iconBgClass, subtitle: 'Horas de terapia' };
   }
 
   // Chart Data Construction (Last 6 months)
@@ -167,7 +170,7 @@ export const Billing: React.FC = () => {
                            therapistStats.map(t => (
                                <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                    <div className="flex items-center gap-3">
-                                       <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                                       <div className="h-8 w-8 rounded-full bg-blue-50 text-[#1e3a5f] flex items-center justify-center font-bold text-xs">
                                            {t.name.charAt(0)}
                                        </div>
                                        <div>
@@ -188,7 +191,7 @@ export const Billing: React.FC = () => {
                            topPatients.map(p => (
                                <div key={p.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                    <div className="flex items-center gap-3">
-                                       <div className="h-8 w-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs">
+                                       <div className="h-8 w-8 rounded-full bg-blue-50 text-[#1e3a5f] flex items-center justify-center font-bold text-xs">
                                            {p.name.charAt(0)}
                                        </div>
                                        <p className="font-semibold text-gray-900 text-sm">{p.name}</p>

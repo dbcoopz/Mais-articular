@@ -4,12 +4,16 @@ import { Button } from '../components/ui/Button';
 import { Input, TextArea } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { User, UserRole } from '../types';
-import { Plus, UserCog } from 'lucide-react';
+import { Plus, UserCog, Trash2, AlertTriangle } from 'lucide-react';
 
 export const Therapists: React.FC = () => {
-  const { users, addUser, updateUser } = useApp();
+  const { users, addUser, updateUser, deleteUser, showToast } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTherapist, setEditingTherapist] = useState<User | null>(null);
+  
+  // Delete State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [therapistToDelete, setTherapistToDelete] = useState<string | null>(null);
 
   const initialForm: User = {
       id: '',
@@ -42,13 +46,29 @@ export const Therapists: React.FC = () => {
       e.preventDefault();
       if (editingTherapist) {
           updateUser({ ...formData });
+          showToast('Terapeuta atualizado com sucesso!');
       } else {
           addUser({
               ...formData,
               id: Math.random().toString(36).substr(2, 9)
           });
+          showToast('Terapeuta criado com sucesso!');
       }
       setIsModalOpen(false);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setTherapistToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (therapistToDelete) {
+        deleteUser(therapistToDelete);
+        showToast('Terapeuta removido com sucesso!', 'info');
+        setIsDeleteModalOpen(false);
+        setTherapistToDelete(null);
+    }
   };
 
   const therapists = users.filter(u => u.role === UserRole.THERAPIST);
@@ -69,7 +89,8 @@ export const Therapists: React.FC = () => {
           {therapists.map(therapist => (
               <div key={therapist.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                   <div className="flex items-center mb-4">
-                      <div className="h-14 w-14 rounded-full bg-blue-100 text-[#1e3a5f] flex items-center justify-center text-xl font-bold mr-4">
+                      {/* Updated Avatar Colors */}
+                      <div className="h-14 w-14 rounded-full bg-blue-50 text-[#1e3a5f] flex items-center justify-center text-xl font-bold mr-4 border border-blue-100">
                           {therapist.name.charAt(0)}
                       </div>
                       <div>
@@ -78,18 +99,29 @@ export const Therapists: React.FC = () => {
                       </div>
                   </div>
                   <div className="space-y-2 text-sm text-gray-600 mb-4">
-                      <p><span className="font-medium">Cédula:</span> {therapist.licenseNumber}</p>
-                      <p><span className="font-medium">Tel:</span> {therapist.phone}</p>
-                      <p><span className="font-medium">Email:</span> {therapist.email}</p>
+                      <p><span className="font-medium text-[#1e3a5f]">Cédula:</span> {therapist.licenseNumber}</p>
+                      <p><span className="font-medium text-[#1e3a5f]">Tel:</span> {therapist.phone}</p>
+                      <p><span className="font-medium text-[#1e3a5f]">Email:</span> {therapist.email}</p>
                       <p className="text-[#1e3a5f] font-bold pt-2">Pagamento/Sessão: €{therapist.paymentPerSession}</p>
                   </div>
                   <div className="pt-4 border-t border-gray-50 flex justify-between items-center">
-                      <span className={`px-2 py-1 text-xs rounded font-medium ${therapist.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`px-2 py-1 text-xs rounded font-medium ${therapist.active ? 'bg-green-50 text-green-800 border border-green-100' : 'bg-red-50 text-red-800 border border-red-100'}`}>
                           {therapist.active ? 'Ativo' : 'Inativo'}
                       </span>
-                      <Button size="sm" variant="ghost" onClick={() => handleOpenModal(therapist)}>
-                          <UserCog size={16} />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => handleOpenModal(therapist)} title="Editar">
+                            <UserCog size={16} className="text-gray-400 hover:text-[#1e3a5f]" />
+                        </Button>
+                        <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="hover:bg-red-50"
+                            onClick={() => handleDeleteClick(therapist.id)}
+                            title="Apagar"
+                        >
+                            <Trash2 size={16} className="text-gray-400 hover:text-red-600" />
+                        </Button>
+                      </div>
                   </div>
               </div>
           ))}
@@ -131,6 +163,27 @@ export const Therapists: React.FC = () => {
                    <Button type="submit">Guardar</Button>
               </div>
           </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirmar Eliminação" maxWidth="sm">
+          <div className="text-center p-2">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Apagar Terapeuta?</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                  Tem a certeza que deseja apagar este terapeuta? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-center gap-3">
+                  <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
+                      Cancelar
+                  </Button>
+                  <Button variant="danger" onClick={confirmDelete}>
+                      Apagar
+                  </Button>
+              </div>
+          </div>
       </Modal>
     </div>
   );

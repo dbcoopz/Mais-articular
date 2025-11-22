@@ -111,23 +111,23 @@ export const Reports: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div 
                 onClick={() => setReportType('therapists')}
-                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'therapists' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50'}`}
+                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'therapists' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50 text-gray-600'}`}
             >
-                <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><Users size={20}/></div>
+                <div className={`p-2 rounded-lg ${reportType === 'therapists' ? 'bg-blue-100 text-[#1e3a5f]' : 'bg-gray-100 text-gray-500'}`}><Users size={20}/></div>
                 Desempenho Terapeutas
             </div>
             <div 
                 onClick={() => setReportType('sessions')}
-                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'sessions' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50'}`}
+                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'sessions' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50 text-gray-600'}`}
             >
-                <div className="bg-purple-100 p-2 rounded-lg text-purple-600"><FileText size={20}/></div>
+                <div className={`p-2 rounded-lg ${reportType === 'sessions' ? 'bg-blue-100 text-[#1e3a5f]' : 'bg-gray-100 text-gray-500'}`}><FileText size={20}/></div>
                 Histórico de Sessões
             </div>
             <div 
                 onClick={() => setReportType('patients')}
-                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'patients' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50'}`}
+                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'patients' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50 text-gray-600'}`}
             >
-                <div className="bg-green-100 p-2 rounded-lg text-green-600"><Users size={20}/></div>
+                <div className={`p-2 rounded-lg ${reportType === 'patients' ? 'bg-blue-100 text-[#1e3a5f]' : 'bg-gray-100 text-gray-500'}`}><Users size={20}/></div>
                 Lista de Pacientes
             </div>
         </div>

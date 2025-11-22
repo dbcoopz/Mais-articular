@@ -1,4 +1,5 @@
-import { User, UserRole, Patient, Session, Appointment } from './types';
+
+import { User, UserRole, Patient, Session, Appointment, WaitingListEntry, SessionType } from './types';
 
 export const INITIAL_USERS: User[] = [
   {
@@ -38,6 +39,30 @@ export const INITIAL_USERS: User[] = [
   }
 ];
 
+export const INITIAL_SESSION_TYPES: SessionType[] = [
+  {
+    id: 'st1',
+    name: 'Sessão Terapia da Fala (45min)',
+    defaultDuration: 45,
+    defaultCost: 45,
+    active: true
+  },
+  {
+    id: 'st2',
+    name: 'Avaliação Inicial',
+    defaultDuration: 60,
+    defaultCost: 60,
+    active: true
+  },
+  {
+    id: 'st3',
+    name: 'Sessão de Acompanhamento (30min)',
+    defaultDuration: 30,
+    defaultCost: 35,
+    active: true
+  }
+];
+
 export const INITIAL_PATIENTS: Patient[] = [
   {
     id: 'p1',
@@ -48,11 +73,15 @@ export const INITIAL_PATIENTS: Patient[] = [
     email: 'pai.joao@example.com',
     responsibleName: 'Carlos Silva',
     therapistId: 'u2',
-    costPerSession: 45,
+    costPerSession: 0,
+    customPrices: {}, // Usa preços padrão
     diagnosis: 'Dislalia',
     address: 'Rua das Flores, 123, Lisboa',
     clinicalNotes: 'Dificuldade na articulação do /r/.',
-    active: true
+    active: true,
+    documents: [
+      { id: 'd1', name: 'Relatório Escolar.pdf', type: 'PDF', uploadDate: '2025-10-01', size: '2.4 MB' }
+    ]
   },
   {
     id: 'p2',
@@ -63,11 +92,13 @@ export const INITIAL_PATIENTS: Patient[] = [
     email: 'mae.ana@example.com',
     responsibleName: 'Maria Pereira',
     therapistId: 'u2',
-    costPerSession: 40,
+    costPerSession: 0,
+    customPrices: { 'st1': 40 }, // Exemplo: Preço especial para sessão normal
     diagnosis: 'Atraso de Desenvolvimento de Linguagem',
     address: 'Av. da Liberdade, 45, Lisboa',
     clinicalNotes: 'Iniciando intervenção.',
-    active: true
+    active: true,
+    documents: []
   }
 ];
 
@@ -76,6 +107,7 @@ export const INITIAL_SESSIONS: Session[] = [
     id: 's1',
     patientId: 'p1',
     therapistId: 'u2',
+    sessionTypeId: 'st1',
     date: '2025-11-17',
     startTime: '14:00',
     durationMinutes: 45,
@@ -90,6 +122,7 @@ export const INITIAL_SESSIONS: Session[] = [
     id: 's2',
     patientId: 'p2',
     therapistId: 'u2',
+    sessionTypeId: 'st2',
     date: '2025-11-18',
     startTime: '10:00',
     durationMinutes: 60,
@@ -107,10 +140,27 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     id: 'a1',
     patientId: 'p1',
     therapistId: 'u2',
-    date: '2025-11-20', // Future date relative to context prompt
+    sessionTypeId: 'st1',
+    date: '2025-11-20',
     time: '14:00',
     durationMinutes: 45,
     notes: 'Sessão regular',
     status: 'PENDING'
+  }
+];
+
+export const INITIAL_WAITING_LIST: WaitingListEntry[] = [
+  {
+    id: 'w1',
+    name: 'Miguel Oliveira',
+    birthDate: '2020-02-10',
+    age: 5,
+    responsibleName: 'Sónia Oliveira',
+    phone: '915555666',
+    email: 'sonia.o@example.com',
+    preferredSchedule: 'Finais de tarde (após 17h30)',
+    reason: 'Gaguez',
+    registrationDate: '2025-10-15',
+    notes: 'Referenciado pela escola.'
   }
 ];

@@ -7,16 +7,16 @@ import { Button } from '../components/ui/Button';
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const { login } = useApp();
+  const { login, showToast } = useApp();
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (login(email, password)) {
+      showToast('Bem-vindo de volta!', 'success');
       navigate('/dashboard');
     } else {
-      setError('Credenciais inválidas ou conta inativa.');
+      showToast('Credenciais inválidas ou conta inativa.', 'error');
     }
   };
 
@@ -59,8 +59,6 @@ export const Login: React.FC = () => {
             required
           />
           
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
           <Button type="submit" fullWidth size="lg">
             Entrar
           </Button>

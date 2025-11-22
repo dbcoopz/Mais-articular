@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input, TextArea } from '../components/ui/Input';
 import { Appointment, Session, UserRole } from '../types';
-import { ChevronLeft, ChevronRight, Plus, Check, Calendar as CalendarIcon, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Check, Calendar as CalendarIcon, List, Clock, FileText, User, Euro, Trash2, Edit2, ArrowRight, HelpCircle, Tag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { 
   format, 
   endOfMonth, 
@@ -22,21 +24,71 @@ import subMonths from 'date-fns/subMonths';
 import subWeeks from 'date-fns/subWeeks';
 import pt from 'date-fns/locale/pt';
 
+// Unified type for display
+type CalendarItem = {
+    type: 'SESSION' | 'APPOINTMENT';
+    id: string;
+    date: string;
+    time: string;
+    duration: number;
+    patientId: string;
+    therapistId: string;
+    notes: string;
+    original: Session | Appointment;
+};
+
 export const CalendarPage: React.FC = () => {
-  const { appointments, patients, addAppointment, deleteAppointment, addSession, users, currentUser } = useApp();
+  const { appointments, sessions, patients, addAppointment, updateAppointment, deleteAppointment, addSession, users, currentUser, deleteSession, sessionTypes, showToast } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week'>('week');
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const navigate = useNavigate();
+  
+  // Modals State
+  const [isModalOpen, setIsModalOpen] = useState(false); // New/Edit Appointment
+  const [viewSession, setViewSession] = useState<Session | null>(null); // View History
+  
+  const [editingAptId, setEditingAptId] = useState<string | null>(null);
+
+  // Drag and Drop State
+  const [draggedAptId, setDraggedAptId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ date: string, time: string, apt: Appointment } | null>(null);
 
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
-  // Filter appointments based on role
-  const displayedAppointments = isAdmin
-    ? appointments
-    : appointments.filter(a => a.therapistId === currentUser?.id);
+  // --- DATA MERGING ---
+  const calendarItems: CalendarItem[] = useMemo(() => {
+      const rawAppointments = appointments.filter(a => a.status === 'PENDING').map(a => ({
+          type: 'APPOINTMENT' as const,
+          id: a.id,
+          date: a.date,
+          time: a.time,
+          duration: a.durationMinutes,
+          patientId: a.patientId,
+          therapistId: a.therapistId,
+          notes: a.notes,
+          original: a
+      }));
+
+      const rawSessions = sessions.map(s => ({
+          type: 'SESSION' as const,
+          id: s.id,
+          date: s.date,
+          time: s.startTime,
+          duration: s.durationMinutes,
+          patientId: s.patientId,
+          therapistId: s.therapistId,
+          notes: s.activities, // Use activities as summary
+          original: s
+      }));
+
+      const allItems = [...rawAppointments, ...rawSessions];
+
+      // Filter based on role
+      if (isAdmin) return allItems;
+      return allItems.filter(i => i.therapistId === currentUser?.id);
+  }, [appointments, sessions, isAdmin, currentUser]);
+
 
   // Appointment Form State
   const [aptForm, setAptForm] = useState<Omit<Appointment, 'id' | 'status'>>({
@@ -45,14 +97,8 @@ export const CalendarPage: React.FC = () => {
       date: format(new Date(), 'yyyy-MM-dd'),
       time: '09:00',
       durationMinutes: 60,
-      notes: ''
-  });
-
-  // Session Conversion Form State
-  const [sessionForm, setSessionForm] = useState<Partial<Session>>({
-      activities: '',
-      progressNotes: '',
-      homework: ''
+      notes: '',
+      sessionTypeId: ''
   });
 
   // Navigation Logic
@@ -92,74 +138,128 @@ export const CalendarPage: React.FC = () => {
   };
 
   const handleCellClick = (day: Date, hour: number) => {
+      setEditingAptId(null);
       setAptForm({
           ...aptForm,
           date: format(day, 'yyyy-MM-dd'),
           time: `${hour.toString().padStart(2, '0')}:00`,
-          therapistId: currentUser?.id || ''
+          therapistId: currentUser?.id || '',
+          sessionTypeId: ''
       });
       setIsModalOpen(true);
   };
 
   const openNewAptModal = () => {
+      setEditingAptId(null);
       setAptForm({
           ...aptForm,
           date: format(selectedDate, 'yyyy-MM-dd'),
-          therapistId: currentUser?.id || ''
+          therapistId: currentUser?.id || '',
+          sessionTypeId: ''
       });
       setIsModalOpen(true);
   };
 
+  const handleEditApt = (e: React.MouseEvent, apt: Appointment) => {
+      e.stopPropagation(); // Prevent navigating to patient detail
+      setEditingAptId(apt.id);
+      setAptForm({
+          patientId: apt.patientId,
+          therapistId: apt.therapistId,
+          date: apt.date,
+          time: apt.time,
+          durationMinutes: apt.durationMinutes,
+          notes: apt.notes,
+          sessionTypeId: apt.sessionTypeId || ''
+      });
+      setIsModalOpen(true);
+  };
+
+  const handleAptTypeChange = (typeId: string) => {
+      const sType = sessionTypes.find(t => t.id === typeId);
+      setAptForm(prev => ({
+          ...prev,
+          sessionTypeId: typeId,
+          durationMinutes: sType ? sType.defaultDuration : prev.durationMinutes
+      }));
+  };
+
   const submitAppointment = (e: React.FormEvent) => {
       e.preventDefault();
-      addAppointment({
+      
+      const payload = {
           ...aptForm,
           therapistId: isAdmin ? aptForm.therapistId : currentUser?.id || '',
-          id: Math.random().toString(36).substr(2, 9),
-          status: 'PENDING'
-      });
+          id: editingAptId || Math.random().toString(36).substr(2, 9),
+          status: 'PENDING' as const
+      };
+
+      if (editingAptId) {
+          updateAppointment(payload);
+          showToast('Agendamento atualizado com sucesso!');
+      } else {
+          addAppointment(payload);
+          showToast('Agendamento criado com sucesso!');
+      }
+      
       setIsModalOpen(false);
+      setEditingAptId(null);
   };
 
-  const initiateConversion = (apt: Appointment) => {
-      setSelectedAppointment(apt);
-      setSessionForm({
-          activities: '',
-          progressNotes: '',
-          homework: ''
-      });
-      setIsConvertModalOpen(true);
+  // --- DRAG AND DROP LOGIC ---
+
+  const handleDragStart = (e: React.DragEvent, aptId: string) => {
+      setDraggedAptId(aptId);
+      e.dataTransfer.effectAllowed = "move";
   };
 
-  const convertToSession = (e: React.FormEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
       e.preventDefault();
-      if (!selectedAppointment) return;
-
-      const patient = patients.find(p => p.id === selectedAppointment.patientId);
-      const therapist = users.find(u => u.id === selectedAppointment.therapistId);
-
-      addSession({
-          id: Math.random().toString(36).substr(2, 9),
-          patientId: selectedAppointment.patientId,
-          therapistId: selectedAppointment.therapistId,
-          date: selectedAppointment.date,
-          startTime: selectedAppointment.time,
-          durationMinutes: selectedAppointment.durationMinutes,
-          status: 'COMPLETED',
-          activities: sessionForm.activities || '',
-          progressNotes: sessionForm.progressNotes || '',
-          homework: sessionForm.homework || '',
-          cost: patient?.costPerSession || 0,
-          therapistPayment: therapist?.paymentPerSession || 0
-      });
-
-      deleteAppointment(selectedAppointment.id);
-      setIsConvertModalOpen(false);
-      setSelectedAppointment(null);
+      e.dataTransfer.dropEffect = "move";
   };
 
-  // Filter day appointments from the already filtered list
-  const dayAppointments = displayedAppointments.filter(a => isSameDay(new Date(a.date), selectedDate));
+  const handleDrop = (e: React.DragEvent, day: Date, hour: number) => {
+      e.preventDefault();
+      if (!draggedAptId) return;
+
+      const originalApt = appointments.find(a => a.id === draggedAptId);
+      if (!originalApt) return;
+
+      const newDateStr = format(day, 'yyyy-MM-dd');
+      const rect = e.currentTarget.getBoundingClientRect();
+      const offsetY = e.clientY - rect.top;
+      const height = rect.height;
+      const segment = Math.min(3, Math.max(0, Math.floor((offsetY / height) * 4)));
+      const minutes = segment * 15;
+      const newTimeStr = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+      if (originalApt.date === newDateStr && originalApt.time === newTimeStr) {
+          setDraggedAptId(null);
+          return;
+      }
+
+      setDropTarget({
+          date: newDateStr,
+          time: newTimeStr,
+          apt: originalApt
+      });
+      setDraggedAptId(null);
+  };
+
+  const confirmDrop = () => {
+      if (dropTarget) {
+          updateAppointment({
+              ...dropTarget.apt,
+              date: dropTarget.date,
+              time: dropTarget.time
+          });
+          showToast('Agendamento movido com sucesso!');
+          setDropTarget(null);
+      }
+  };
+
+  const getPatientName = (id: string) => patients.find(p => p.id === id)?.name || 'Desconhecido';
+  const getSessionTypeName = (id?: string) => sessionTypes.find(t => t.id === id)?.name || 'Personalizado';
 
   // Available Patients for Dropdown
   const availablePatients = isAdmin 
@@ -180,7 +280,6 @@ export const CalendarPage: React.FC = () => {
                 </p>
             </div>
             <div className="flex flex-wrap gap-3 items-center w-full xl:w-auto">
-                {/* View Toggler */}
                 <div className="bg-gray-100 p-1 rounded-lg flex text-sm font-medium">
                     <button 
                         onClick={() => setView('month')}
@@ -196,7 +295,6 @@ export const CalendarPage: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Navigation */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex items-center p-1">
                     <button onClick={handlePrev} className="p-2 hover:bg-gray-100 rounded-md text-gray-600"><ChevronLeft size={20}/></button>
                     <button onClick={handleNext} className="p-2 hover:bg-gray-100 rounded-md text-gray-600"><ChevronRight size={20}/></button>
@@ -212,7 +310,6 @@ export const CalendarPage: React.FC = () => {
             {view === 'month' && (
                 <>
                     <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-2 md:p-6 overflow-y-auto">
-                         {/* Add min-width to force scrolling instead of squishing on mobile */}
                         <div className="min-w-[600px]">
                             <div className="grid grid-cols-7 gap-1 text-center mb-2">
                                 {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map(d => (
@@ -221,7 +318,7 @@ export const CalendarPage: React.FC = () => {
                             </div>
                             <div className="grid grid-cols-7 gap-1 auto-rows-fr">
                                 {monthDays.map((day, idx) => {
-                                    const aptsForDay = displayedAppointments.filter(a => isSameDay(new Date(a.date), day));
+                                    const itemsForDay = calendarItems.filter(i => isSameDay(new Date(i.date), day));
                                     return (
                                         <div 
                                             key={idx} 
@@ -235,9 +332,12 @@ export const CalendarPage: React.FC = () => {
                                         >
                                             <div className="text-right text-sm font-medium mb-1">{format(day, 'd')}</div>
                                             <div className="flex-1 flex flex-col gap-1 overflow-hidden">
-                                                {aptsForDay.map(apt => (
-                                                    <div key={apt.id} className="text-[10px] bg-blue-100 text-blue-700 px-1 rounded truncate">
-                                                        {apt.time}
+                                                {itemsForDay.map(item => (
+                                                    <div 
+                                                        key={`${item.type}-${item.id}`} 
+                                                        className={`text-[10px] px-1 rounded truncate ${item.type === 'SESSION' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-700'}`}
+                                                    >
+                                                        {item.time}
                                                     </div>
                                                 ))}
                                             </div>
@@ -248,35 +348,49 @@ export const CalendarPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Side Panel - Details for selected day (Only in Month View) */}
+                    {/* Side Panel */}
                     <div className="w-full lg:w-80 bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 flex flex-col h-fit lg:h-full">
                         <h3 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">
                             {format(selectedDate, "d 'de' MMMM", { locale: pt })}
                         </h3>
                         
                         <div className="flex-1 overflow-y-auto space-y-3">
-                            {dayAppointments.length === 0 ? (
-                                <p className="text-gray-400 text-sm">Nenhum agendamento.</p>
+                             {calendarItems.filter(i => isSameDay(new Date(i.date), selectedDate)).length === 0 ? (
+                                <p className="text-gray-400 text-sm">Nenhum evento.</p>
                             ) : (
-                                dayAppointments.sort((a,b) => a.time.localeCompare(b.time)).map(apt => {
-                                    const patient = patients.find(p => p.id === apt.patientId);
+                                calendarItems.filter(i => isSameDay(new Date(i.date), selectedDate)).sort((a,b) => a.time.localeCompare(b.time)).map(item => {
+                                    const patient = patients.find(p => p.id === item.patientId);
+                                    const isSession = item.type === 'SESSION';
                                     return (
-                                        <div key={apt.id} className="bg-gray-50 p-3 rounded-lg border border-gray-100 group">
+                                        <div 
+                                            key={`${item.type}-${item.id}`} 
+                                            className={`p-3 rounded-lg border group cursor-pointer hover:shadow-sm transition-all relative ${isSession ? 'bg-green-50 border-green-100' : 'bg-gray-50 border-gray-100'}`}
+                                            onClick={() => navigate(`/patients/${item.patientId}`)}
+                                        >
                                             <div className="flex justify-between items-start mb-1">
-                                                <span className="font-bold text-[#1e3a5f]">{apt.time}</span>
-                                                <span className="text-xs bg-gray-200 px-2 py-0.5 rounded">{apt.durationMinutes} min</span>
+                                                <span className="font-bold text-[#1e3a5f]">{item.time}</span>
+                                                <span className="text-xs bg-white px-2 py-0.5 rounded border border-gray-200">{item.duration} min</span>
                                             </div>
                                             <p className="font-medium text-gray-900">{patient?.name}</p>
-                                            <p className="text-xs text-gray-500 mb-3">{apt.notes || 'Sem notas'}</p>
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline" 
-                                                fullWidth 
-                                                onClick={() => initiateConversion(apt)}
-                                                className="flex items-center justify-center gap-1 text-xs"
-                                            >
-                                                <Check size={12} /> Concluir Sessão
-                                            </Button>
+                                            
+                                            <p className="text-xs text-gray-500 mb-3 truncate flex items-center gap-1">
+                                                <Tag size={10} />
+                                                {getSessionTypeName(item.original.sessionTypeId)}
+                                            </p>
+                                            
+                                            {isSession ? (
+                                                <div className="flex items-center text-xs text-green-700 font-bold gap-1">
+                                                    <Check size={12} /> Realizada
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={(e) => handleEditApt(e, item.original as Appointment)}
+                                                    className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-[#1e3a5f] bg-white rounded-md shadow-sm opacity-0 group-hover:opacity-100 transition-all"
+                                                    title="Editar Agendamento"
+                                                >
+                                                    <Edit2 size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     )
                                 })
@@ -289,17 +403,12 @@ export const CalendarPage: React.FC = () => {
             {/* WEEK VIEW */}
             {view === 'week' && (
                 <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col relative">
-                    {/* Container for horizontal scroll */}
                     <div className="flex-1 overflow-auto">
                         <div className="min-w-[800px]">
-                            {/* Header Row: Days */}
                             <div className="grid grid-cols-8 border-b border-gray-200 sticky top-0 bg-white z-20">
                                 <div className="p-4 border-r border-gray-100 bg-gray-50"></div>
                                 {weekDays.map((day, idx) => (
-                                    <div 
-                                        key={idx} 
-                                        className={`p-3 text-center border-r border-gray-100 last:border-r-0 ${isToday(day) ? 'bg-blue-50' : 'bg-white'}`}
-                                    >
+                                    <div key={idx} className={`p-3 text-center border-r border-gray-100 last:border-r-0 ${isToday(day) ? 'bg-blue-50' : 'bg-white'}`}>
                                         <div className={`text-xs font-semibold uppercase ${isToday(day) ? 'text-blue-600' : 'text-gray-500'}`}>
                                             {format(day, 'EEE', { locale: pt })}
                                         </div>
@@ -310,39 +419,70 @@ export const CalendarPage: React.FC = () => {
                                 ))}
                             </div>
 
-                            {/* Body: Time Grid */}
                             <div>
                                 {hours.map(hour => (
-                                    <div key={hour} className="grid grid-cols-8 min-h-[80px]">
-                                        {/* Time Column */}
+                                    <div key={hour} className="grid grid-cols-8 h-[128px]">
                                         <div className="border-r border-b border-gray-100 bg-gray-50 p-2 text-right text-xs font-medium text-gray-500 sticky left-0 z-10">
                                             {hour}:00
                                         </div>
-                                        {/* Days Columns */}
                                         {weekDays.map((day, idx) => {
-                                            const cellApts = displayedAppointments.filter(a => {
-                                                return isSameDay(new Date(a.date), day) && parseInt(a.time.split(':')[0]) === hour;
-                                            });
-
+                                            const cellItems = calendarItems.filter(i => isSameDay(new Date(i.date), day) && parseInt(i.time.split(':')[0]) === hour);
                                             return (
                                                 <div 
                                                     key={idx} 
                                                     className="border-r border-b border-gray-100 last:border-r-0 relative p-1 hover:bg-gray-50 transition-colors cursor-pointer"
                                                     onClick={() => handleCellClick(day, hour)}
+                                                    onDragOver={handleDragOver}
+                                                    onDrop={(e) => handleDrop(e, day, hour)}
                                                 >
-                                                    {cellApts.map(apt => (
-                                                        <div 
-                                                            key={apt.id}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation(); 
-                                                                initiateConversion(apt);
-                                                            }}
-                                                            className="bg-blue-100 border-l-4 border-[#1e3a5f] text-[#1e3a5f] p-1.5 rounded text-xs mb-1 shadow-sm hover:shadow-md transition-shadow"
-                                                        >
-                                                            <div className="font-bold">{apt.time}</div>
-                                                            <div className="truncate font-medium">{patients.find(p => p.id === apt.patientId)?.name}</div>
-                                                        </div>
-                                                    ))}
+                                                    <div className="absolute inset-0 w-full h-full pointer-events-none flex flex-col z-0">
+                                                        <div className="flex-1 border-b border-gray-50 border-dashed"></div>
+                                                        <div className="flex-1 border-b border-gray-100/50"></div>
+                                                        <div className="flex-1 border-b border-gray-50 border-dashed"></div>
+                                                        <div className="flex-1"></div>
+                                                    </div>
+
+                                                    {cellItems.map(item => {
+                                                        const startMinutes = parseInt(item.time.split(':')[1]);
+                                                        const topPositionPercent = (startMinutes / 60) * 100;
+                                                        const heightPercent = (item.duration / 60) * 100;
+                                                        
+                                                        return (
+                                                          <div 
+                                                              key={`${item.type}-${item.id}`}
+                                                              draggable={item.type === 'APPOINTMENT'}
+                                                              onDragStart={(e) => handleDragStart(e, item.id)}
+                                                              onClick={(e) => {
+                                                                  e.stopPropagation(); 
+                                                                  navigate(`/patients/${item.patientId}`);
+                                                              }}
+                                                              style={{
+                                                                  top: `${topPositionPercent}%`,
+                                                                  height: `${heightPercent}%`,
+                                                                  position: 'absolute', left: '4px', right: '4px', zIndex: 10, minHeight: '24px'
+                                                              }}
+                                                              className={`p-1.5 rounded text-xs shadow-sm hover:shadow-md transition-shadow border-l-4 overflow-hidden group ${
+                                                                  item.type === 'SESSION' 
+                                                                      ? 'bg-green-100 border-green-600 text-green-800' 
+                                                                      : 'bg-blue-100 border-[#1e3a5f] text-[#1e3a5f] cursor-grab active:cursor-grabbing'
+                                                              }`}
+                                                          >
+                                                              <div className="font-bold flex justify-between items-center">
+                                                                  <span>{item.time}</span>
+                                                                  {item.type === 'APPOINTMENT' && (
+                                                                      <button
+                                                                        onClick={(e) => handleEditApt(e, item.original as Appointment)}
+                                                                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-white/50 rounded text-[#1e3a5f]"
+                                                                        title="Editar"
+                                                                      >
+                                                                          <Edit2 size={12} />
+                                                                      </button>
+                                                                  )}
+                                                              </div>
+                                                              <div className="truncate font-medium">{patients.find(p => p.id === item.patientId)?.name}</div>
+                                                          </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             );
                                         })}
@@ -356,11 +496,11 @@ export const CalendarPage: React.FC = () => {
 
         </div>
 
-        {/* New Appointment Modal */}
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Novo Agendamento">
+        {/* New/Edit Appointment Modal */}
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingAptId ? "Editar Agendamento" : "Novo Agendamento"}>
             <form onSubmit={submitAppointment} className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Paciente *</label>
+                    <label className="block text-sm font-medium text-gray-900 mb-1">Paciente *</label>
                     <select 
                         className="w-full bg-white text-gray-900 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-[#1e3a5f]"
                         value={aptForm.patientId}
@@ -373,33 +513,78 @@ export const CalendarPage: React.FC = () => {
                         ))}
                     </select>
                 </div>
+                
+                {/* Session Type Selection */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-1">Tipo de Sessão</label>
+                    <select 
+                        className="w-full bg-white text-gray-900 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-[#1e3a5f]"
+                        value={aptForm.sessionTypeId || ''}
+                        onChange={(e) => handleAptTypeChange(e.target.value)}
+                    >
+                        <option value="">Personalizado</option>
+                        {sessionTypes.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <Input label="Data *" type="date" value={aptForm.date} onChange={e => setAptForm({...aptForm, date: e.target.value})} required />
                     <Input label="Hora *" type="time" value={aptForm.time} onChange={e => setAptForm({...aptForm, time: e.target.value})} required />
                 </div>
                 <Input label="Duração (min)" type="number" value={aptForm.durationMinutes} onChange={e => setAptForm({...aptForm, durationMinutes: parseInt(e.target.value)})} required />
                 <TextArea label="Observações" value={aptForm.notes} onChange={e => setAptForm({...aptForm, notes: e.target.value})} />
+                
                 <div className="flex justify-end gap-2 pt-2">
                      <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-                     <Button type="submit">Agendar</Button>
+                     <Button type="submit">{editingAptId ? 'Atualizar' : 'Agendar'}</Button>
                 </div>
             </form>
         </Modal>
 
-        {/* Convert to Session Modal */}
-        <Modal isOpen={isConvertModalOpen} onClose={() => setIsConvertModalOpen(false)} title="Registar Sessão Realizada">
-            <div className="mb-4 bg-blue-50 p-3 rounded-md text-sm text-blue-800">
-                Convertendo agendamento de <strong>{patients.find(p => p.id === selectedAppointment?.patientId)?.name}</strong>.
-            </div>
-            <form onSubmit={convertToSession} className="space-y-4">
-                <TextArea label="Atividades Realizadas *" value={sessionForm.activities} onChange={e => setSessionForm({...sessionForm, activities: e.target.value})} required />
-                <TextArea label="Notas de Progresso" value={sessionForm.progressNotes} onChange={e => setSessionForm({...sessionForm, progressNotes: e.target.value})} />
-                <TextArea label="Trabalho de Casa" value={sessionForm.homework} onChange={e => setSessionForm({...sessionForm, homework: e.target.value})} />
-                <div className="flex justify-end gap-2 pt-2">
-                     <Button type="button" variant="secondary" onClick={() => setIsConvertModalOpen(false)}>Cancelar</Button>
-                     <Button type="submit">Confirmar e Salvar</Button>
+        {/* View Modal */}
+        <Modal isOpen={!!viewSession} onClose={() => setViewSession(null)} title="Resumo da Sessão">
+            {viewSession && (
+            <div className="space-y-6">
+                <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                    <div className="h-12 w-12 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xl">
+                        {getPatientName(viewSession.patientId).charAt(0)}
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900">{getPatientName(viewSession.patientId)}</h3>
+                        <p className="text-sm text-gray-500">{format(new Date(viewSession.date), 'dd/MM/yyyy')} às {viewSession.startTime}</p>
+                    </div>
                 </div>
-            </form>
+                <div>
+                    <h4 className="text-sm font-bold text-gray-900 mb-1">Tipo de Sessão</h4>
+                    <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">{getSessionTypeName(viewSession.sessionTypeId)}</p>
+                </div>
+                <div>
+                    <h4 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2"><FileText size={16} className="text-blue-600"/> Atividades Realizadas</h4>
+                    <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">{viewSession.activities}</div>
+                </div>
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+                    <Button variant="secondary" onClick={() => setViewSession(null)}>Fechar</Button>
+                </div>
+            </div>
+            )}
+        </Modal>
+        
+        {/* Drag Drop Modal */}
+        <Modal isOpen={!!dropTarget} onClose={() => setDropTarget(null)} title="Confirmar Reagendamento" maxWidth="sm">
+             <div className="p-2">
+                <div className="bg-blue-50 p-4 rounded-xl mb-6 flex items-center gap-3">
+                    <HelpCircle className="text-blue-600 h-8 w-8 flex-shrink-0" />
+                    <div>
+                        <p className="text-sm font-bold text-blue-900">Mover para {dropTarget && format(new Date(dropTarget.date), 'dd/MM', {locale: pt})} às {dropTarget?.time}?</p>
+                    </div>
+                </div>
+                <div className="flex justify-center gap-3">
+                    <Button variant="secondary" onClick={() => setDropTarget(null)}>Cancelar</Button>
+                    <Button onClick={confirmDrop}>Confirmar</Button>
+                </div>
+            </div>
         </Modal>
     </div>
   );

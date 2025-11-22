@@ -1,17 +1,24 @@
+
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input, TextArea } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Patient, UserRole } from '../types';
-import { Plus, Search, Edit2, User } from 'lucide-react';
+import { Plus, Search, Edit2, User, Trash2, AlertTriangle, FileText, Tag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const Patients: React.FC = () => {
-  const { patients, users, addPatient, updatePatient, currentUser } = useApp();
+  const { patients, users, sessionTypes, addPatient, updatePatient, deletePatient, currentUser, showToast } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const navigate = useNavigate();
   
+  // Delete State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
+
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
   const initialFormState: Omit<Patient, 'id'> = {
@@ -23,15 +30,18 @@ export const Patients: React.FC = () => {
     responsibleName: '',
     therapistId: '',
     costPerSession: 0,
+    customPrices: {},
     diagnosis: '',
     address: '',
     clinicalNotes: '',
-    active: true
+    active: true,
+    documents: []
   };
 
   const [formData, setFormData] = useState(initialFormState);
 
-  const handleOpenModal = (patient?: Patient) => {
+  const handleOpenModal = (e: React.MouseEvent, patient?: Patient) => {
+    e.stopPropagation(); // Prevent navigating to detail page
     if (patient) {
       setEditingPatient(patient);
       setFormData(patient);
@@ -50,10 +60,40 @@ export const Patients: React.FC = () => {
     e.preventDefault();
     if (editingPatient) {
       updatePatient({ ...formData, id: editingPatient.id });
+      showToast('Paciente atualizado com sucesso!');
     } else {
       addPatient({ ...formData, id: Math.random().toString(36).substr(2, 9) });
+      showToast('Paciente criado com sucesso!');
     }
     setIsModalOpen(false);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Prevent navigating
+    setPatientToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (patientToDelete) {
+        deletePatient(patientToDelete);
+        showToast('Paciente removido com sucesso!', 'info');
+        setIsDeleteModalOpen(false);
+        setPatientToDelete(null);
+    }
+  };
+
+  const handleCustomPriceChange = (typeId: string, value: string) => {
+      const numValue = parseFloat(value);
+      setFormData(prev => {
+          const newPrices = { ...prev.customPrices };
+          if (!isNaN(numValue)) {
+              newPrices[typeId] = numValue;
+          } else {
+              delete newPrices[typeId];
+          }
+          return { ...prev, customPrices: newPrices };
+      });
   };
 
   // Filter: Search term AND (Admin sees all OR Therapist sees own)
@@ -73,7 +113,7 @@ export const Patients: React.FC = () => {
           <h1 className="text-2xl font-bold text-[#1e3a5f]">Pacientes</h1>
           <p className="text-gray-500">{filteredPatients.length} paciente(s) encontrado(s)</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
+        <Button onClick={(e) => handleOpenModal(e)}>
           <Plus size={18} className="mr-2" /> Novo Paciente
         </Button>
       </div>
@@ -95,10 +135,15 @@ export const Patients: React.FC = () => {
       {/* Grid/List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPatients.map(patient => (
-          <div key={patient.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div 
+            key={patient.id} 
+            onClick={() => navigate(`/patients/${patient.id}`)}
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer group"
+          >
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center">
-                 <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-lg mr-3">
+                 {/* Updated Avatar Colors */}
+                 <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center text-[#1e3a5f] font-bold text-lg mr-3 border border-blue-100 group-hover:bg-[#1e3a5f] group-hover:text-white transition-colors">
                     {patient.name.charAt(0)}
                  </div>
                  <div>
@@ -106,19 +151,37 @@ export const Patients: React.FC = () => {
                    <p className="text-xs text-gray-500">{patient.age} anos • {patient.diagnosis}</p>
                  </div>
               </div>
-              <button onClick={() => handleOpenModal(patient)} className="text-gray-400 hover:text-[#1e3a5f]">
-                <Edit2 size={16} />
-              </button>
+              <div className="flex gap-1">
+                <button 
+                    onClick={(e) => handleOpenModal(e, patient)} 
+                    className="text-gray-400 hover:text-[#1e3a5f] p-1 rounded-md hover:bg-blue-50 transition-colors"
+                    title="Editar"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button 
+                    onClick={(e) => handleDeleteClick(e, patient.id)} 
+                    className="text-gray-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors"
+                    title="Apagar"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
             
             <div className="space-y-2 text-sm text-gray-600 mb-4">
                <p><span className="font-medium text-gray-900">Resp:</span> {patient.responsibleName}</p>
                <p><span className="font-medium text-gray-900">Tel:</span> {patient.phone}</p>
-               {isAdmin && <p><span className="font-medium text-gray-900">Valor/Sessão:</span> €{patient.costPerSession}</p>}
+               
+               {/* Observações no lugar do preço */}
+               <div className="pt-2">
+                   <p className="font-medium text-gray-900 flex items-center gap-1"><FileText size={12} className="text-[#1e3a5f]"/> Observações:</p>
+                   <p className="text-gray-500 italic truncate h-5">{patient.clinicalNotes || 'Sem observações.'}</p>
+               </div>
             </div>
             
             <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-               <span className={`px-2 py-1 rounded-md text-xs font-medium ${patient.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-800'}`}>
+               <span className={`px-2 py-1 rounded-md text-xs font-medium ${patient.active ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-800 border border-red-100'}`}>
                  {patient.active ? 'Ativo' : 'Inativo'}
                </span>
                <div className="flex items-center text-xs text-gray-500">
@@ -148,34 +211,57 @@ export const Patients: React.FC = () => {
             <Input label="Email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">Terapeuta</label>
-               {isAdmin ? (
-                   <select 
-                     className="w-full bg-white text-gray-900 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-[#1e3a5f] focus:border-[#1e3a5f]"
-                     value={formData.therapistId}
-                     onChange={e => setFormData({...formData, therapistId: e.target.value})}
-                   >
-                     <option value="">Selecione</option>
-                     {users.filter(u => u.role === UserRole.THERAPIST).map(u => (
-                       <option key={u.id} value={u.id}>{u.name}</option>
-                     ))}
-                   </select>
-               ) : (
-                   <Input value={currentUser?.name} disabled className="bg-gray-100" />
-               )}
-             </div>
-             {isAdmin && (
-                <Input label="Custo por Sessão (€)" type="number" value={formData.costPerSession} onChange={e => setFormData({...formData, costPerSession: parseFloat(e.target.value)})} />
-             )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Terapeuta</label>
+            {isAdmin ? (
+                <select 
+                  className="w-full bg-white text-gray-900 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-[#1e3a5f] focus:border-[#1e3a5f]"
+                  value={formData.therapistId}
+                  onChange={e => setFormData({...formData, therapistId: e.target.value})}
+                >
+                  <option value="">Selecione</option>
+                  {users.filter(u => u.role === UserRole.THERAPIST).map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+            ) : (
+                <Input value={currentUser?.name} disabled className="bg-gray-100" />
+            )}
           </div>
+
+          {isAdmin && (
+              <Input label="Preço Base por Sessão (€)" type="number" value={formData.costPerSession} onChange={e => setFormData({...formData, costPerSession: parseFloat(e.target.value)})} />
+          )}
           
           <Input label="Diagnóstico" value={formData.diagnosis} onChange={e => setFormData({...formData, diagnosis: e.target.value})} />
           <Input label="Morada" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
           <TextArea label="Observações Clínicas" rows={3} value={formData.clinicalNotes} onChange={e => setFormData({...formData, clinicalNotes: e.target.value})} />
           
-          <div className="flex items-center gap-2">
+          {/* Tabela de Preços Personalizados (Apenas Admin) */}
+          {isAdmin && (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+                  <h4 className="font-bold text-[#1e3a5f] mb-2 flex items-center gap-2">
+                      <Tag size={16} /> Preços Personalizados (por Sessão)
+                  </h4>
+                  <p className="text-xs text-gray-500 mb-3">Deixe em branco para usar o preço padrão do serviço.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {sessionTypes.map(type => (
+                          <div key={type.id}>
+                              <Input 
+                                  label={type.name} 
+                                  type="number" 
+                                  placeholder={`Padrão: €${type.defaultCost}`}
+                                  value={formData.customPrices?.[type.id] || ''} 
+                                  onChange={e => handleCustomPriceChange(type.id, e.target.value)}
+                              />
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          )}
+
+          <div className="flex items-center gap-2 mt-2">
             <input type="checkbox" id="active" checked={formData.active} onChange={e => setFormData({...formData, active: e.target.checked})} />
             <label htmlFor="active" className="text-sm text-gray-700">Paciente Ativo</label>
           </div>
@@ -185,6 +271,27 @@ export const Patients: React.FC = () => {
             <Button type="submit">Guardar</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirmar Eliminação" maxWidth="sm">
+          <div className="text-center p-2">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Apagar Paciente?</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                  Tem a certeza que deseja apagar este paciente? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-center gap-3">
+                  <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
+                      Cancelar
+                  </Button>
+                  <Button variant="danger" onClick={confirmDelete}>
+                      Apagar
+                  </Button>
+              </div>
+          </div>
       </Modal>
     </div>
   );

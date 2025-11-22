@@ -39,8 +39,9 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
 
   // Use createPortal to render the modal outside the DOM hierarchy of the parent component
   // This prevents parent transforms (like page animations) from affecting the fixed positioning of the modal backdrop
+  // Added font-sans to ensure consistent typography inside the portal
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-20 p-4 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-20 p-4 backdrop-blur-sm animate-fade-in font-sans">
       <div 
         ref={modalRef}
         className={`w-full ${maxWidthClass} bg-white shadow-2xl rounded-xl border border-gray-300 flex flex-col max-h-[90vh] overflow-hidden animate-scale-in text-gray-900`}

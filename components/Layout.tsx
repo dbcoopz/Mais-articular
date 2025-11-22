@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { UserRole } from '../types';
+import { Toast } from './ui/Toast';
 import { 
   LayoutDashboard, 
   Users, 
@@ -14,11 +15,13 @@ import {
   Download,
   ShieldCheck,
   Menu,
-  X
+  X,
+  ClipboardList,
+  Settings
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, logout } = useApp();
+  const { currentUser, logout, toasts, removeToast } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -60,17 +63,34 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
     { label: 'Pacientes', icon: Users, path: '/patients', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
+    { label: 'Lista de Espera', icon: ClipboardList, path: '/waiting-list', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
     { label: 'Sessões', icon: MessageSquare, path: '/sessions', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
     { label: 'Agenda', icon: Calendar, path: '/calendar', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
     { label: 'Terapeutas', icon: UserCog, path: '/therapists', roles: [UserRole.ADMIN] },
     { label: 'Administradores', icon: ShieldCheck, path: '/administrators', roles: [UserRole.ADMIN] },
     { label: 'Faturação', icon: CreditCard, path: '/billing', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
     { label: 'Relatórios', icon: FileText, path: '/reports', roles: [UserRole.ADMIN] },
+    { label: 'Configurações', icon: Settings, path: '/settings', roles: [UserRole.ADMIN] },
   ];
 
   return (
     <div className="min-h-screen flex bg-gray-50 font-sans text-gray-900">
       
+      {/* Toast Container */}
+      <div className="fixed bottom-5 right-5 z-[10000] flex flex-col items-end space-y-2 pointer-events-none">
+         <div className="pointer-events-auto">
+            {toasts.map(toast => (
+              <Toast 
+                key={toast.id} 
+                id={toast.id} 
+                message={toast.message} 
+                type={toast.type} 
+                onClose={removeToast} 
+              />
+            ))}
+         </div>
+      </div>
+
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 w-full bg-[#0f172a] text-white z-30 flex items-center justify-between p-4 shadow-md">
         <div className="flex items-center gap-2">
@@ -182,7 +202,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen pt-20 md:pt-8 bg-gray-50 w-full">
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen pt-24 md:pt-12 bg-gray-50 w-full">
         {/* Key prop forces React to remount div on route change, triggering CSS animation */}
         <div key={location.pathname} className="h-full animate-material-enter max-w-7xl mx-auto">
             {children}
