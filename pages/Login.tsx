@@ -27,7 +27,7 @@ export const Login: React.FC = () => {
         <div className="flex flex-col items-center mb-8">
           {/* Logo Replacement */}
           <img 
-            src="/logo.png" 
+            src="https://i.ibb.co/kV81K8W4/cropped-mais-articular-logo-scaled-1-2048x585.png" 
             alt="Mais Articular" 
             className="max-w-[280px] w-full h-auto object-contain mb-4"
             onError={(e) => {
@@ -38,8 +38,6 @@ export const Login: React.FC = () => {
           />
           {/* Fallback Text if image fails to load */}
           <h1 className="hidden text-3xl font-bold text-[#1e3a5f] mb-2">MAIS ARTICULAR</h1>
-          
-          <p className="text-gray-500">Gestão Clínica</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

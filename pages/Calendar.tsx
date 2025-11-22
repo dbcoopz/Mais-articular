@@ -396,15 +396,21 @@ export const CalendarPage: React.FC = () => {
                                         >
                                             <div className="text-right text-sm font-medium mb-1">{format(day, 'd')}</div>
                                             <div className="flex-1 flex flex-col gap-1 overflow-hidden">
-                                                {itemsForDay.map(item => (
-                                                    <div 
-                                                        key={`${item.type}-${item.id}`} 
-                                                        className={`text-[10px] px-1 rounded truncate flex items-center gap-1 ${item.type === 'SESSION' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-700'}`}
-                                                    >
-                                                        {(item.original as Appointment).groupId && <Repeat size={8} />}
-                                                        {item.time}
-                                                    </div>
-                                                ))}
+                                                {itemsForDay.map(item => {
+                                                    // NEW: Find Utente Name
+                                                    const itemUtente = utentes.find(u => u.id === item.utenteId);
+                                                    return (
+                                                        <div 
+                                                            key={`${item.type}-${item.id}`} 
+                                                            className={`text-[10px] px-1 rounded truncate flex items-center gap-1 ${item.type === 'SESSION' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-700'}`}
+                                                            title={`${item.time} - ${itemUtente?.name}`} // Tooltip with time and full name
+                                                        >
+                                                            {(item.original as Appointment).groupId && <Repeat size={8} />}
+                                                            {/* NEW: Display Utente Name instead of time */}
+                                                            <span className="truncate font-medium">{itemUtente?.name || 'Sem nome'}</span>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     );
@@ -435,6 +441,7 @@ export const CalendarPage: React.FC = () => {
                                             onClick={() => navigate(`/utentes/${item.utenteId}`)}
                                         >
                                             <div className="flex items-center gap-2 mb-1">
+                                                {/* Adjusted Layout in side panel as well per previous requests */}
                                                 <span className="font-bold text-[#1e3a5f] text-lg">{item.time}</span>
                                                 <span className="text-xs text-gray-500 font-normal">({item.duration} min)</span>
                                                 {isRecurring && <Repeat size={12} className="text-[#1e3a5f]" />}
@@ -503,6 +510,7 @@ export const CalendarPage: React.FC = () => {
                                                     onDragOver={handleDragOver}
                                                     onDrop={(e) => handleDrop(e, day, hour)}
                                                 >
+                                                    {/* Grid lines for quarters */}
                                                     <div className="absolute inset-0 w-full h-full pointer-events-none flex flex-col z-0">
                                                         <div className="flex-1 border-b border-gray-50 border-dashed"></div>
                                                         <div className="flex-1 border-b border-gray-100/50"></div>

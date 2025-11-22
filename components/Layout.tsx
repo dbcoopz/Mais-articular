@@ -98,7 +98,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <div className="md:hidden fixed top-0 w-full bg-[#0f172a] text-white z-30 flex items-center justify-between p-4 shadow-md">
         <div className="flex items-center gap-2">
             <div className="bg-white rounded p-1 w-8 h-8 flex items-center justify-center">
-                 <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display='none'}/>
+                 <img src="https://i.ibb.co/kV81K8W4/cropped-mais-articular-logo-scaled-1-2048x585.png" alt="Logo" className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display='none'}/>
             </div>
             <span className="font-bold text-sm tracking-wide">MAIS ARTICULAR</span>
         </div>
@@ -127,7 +127,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
            {/* Logo Container - Desktop */}
            <div className="bg-white rounded-lg p-3 flex items-center justify-center shadow-sm">
               <img 
-                src="/logo.png" 
+                src="https://i.ibb.co/kV81K8W4/cropped-mais-articular-logo-scaled-1-2048x585.png" 
                 alt="Mais Articular" 
                 className="w-full h-auto object-contain max-h-12"
                 onError={(e) => {
