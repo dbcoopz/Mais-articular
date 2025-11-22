@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
@@ -17,7 +18,8 @@ import {
   Menu,
   X,
   ClipboardList,
-  Settings
+  Settings,
+  Briefcase // Icon for Services
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -61,14 +63,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   };
 
   const menuItems = [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
-    { label: 'Pacientes', icon: Users, path: '/patients', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
-    { label: 'Lista de Espera', icon: ClipboardList, path: '/waiting-list', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
-    { label: 'Sessões', icon: MessageSquare, path: '/sessions', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
-    { label: 'Agenda', icon: Calendar, path: '/calendar', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
-    { label: 'Terapeutas', icon: UserCog, path: '/therapists', roles: [UserRole.ADMIN] },
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: [UserRole.ADMIN, UserRole.PROFISSIONAL] },
+    { label: 'Utentes', icon: Users, path: '/utentes', roles: [UserRole.ADMIN, UserRole.PROFISSIONAL] },
+    { label: 'Lista de Espera', icon: ClipboardList, path: '/waiting-list', roles: [UserRole.ADMIN, UserRole.PROFISSIONAL] },
+    { label: 'Sessões', icon: MessageSquare, path: '/sessions', roles: [UserRole.ADMIN, UserRole.PROFISSIONAL] },
+    { label: 'Agenda', icon: Calendar, path: '/calendar', roles: [UserRole.ADMIN, UserRole.PROFISSIONAL] },
+    { label: 'Profissionais', icon: UserCog, path: '/profissionais', roles: [UserRole.ADMIN] },
     { label: 'Administradores', icon: ShieldCheck, path: '/administrators', roles: [UserRole.ADMIN] },
-    { label: 'Faturação', icon: CreditCard, path: '/billing', roles: [UserRole.ADMIN, UserRole.THERAPIST] },
+    { label: 'Serviços', icon: Briefcase, path: '/services', roles: [UserRole.ADMIN] },
+    { label: 'Faturação', icon: CreditCard, path: '/billing', roles: [UserRole.ADMIN, UserRole.PROFISSIONAL] },
     { label: 'Relatórios', icon: FileText, path: '/reports', roles: [UserRole.ADMIN] },
     { label: 'Configurações', icon: Settings, path: '/settings', roles: [UserRole.ADMIN] },
   ];
@@ -151,7 +154,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
         <nav className="flex-1 px-2 space-y-1 mt-2 overflow-y-auto">
           {menuItems.filter(item => item.roles.includes(currentUser.role)).map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname.startsWith(item.path);
             return (
               <Link
                 key={item.path}
@@ -188,7 +191,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-medium truncate">{currentUser.name}</p>
-              <p className="text-xs text-gray-400 truncate">{currentUser.role === UserRole.ADMIN ? 'Administrador' : 'Terapeuta'}</p>
+              <p className="text-xs text-gray-400 truncate">{currentUser.role === UserRole.ADMIN ? 'Administrador' : 'Profissional'}</p>
             </div>
           </div>
           <button 

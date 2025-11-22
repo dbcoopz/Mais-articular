@@ -1,7 +1,14 @@
 
 export enum UserRole {
   ADMIN = 'ADMIN',
-  THERAPIST = 'THERAPIST'
+  PROFISSIONAL = 'PROFISSIONAL'
+}
+
+// Specialty is now an interface to be managed dynamically
+export interface Specialty {
+  id: string;
+  name: string;
+  color: string; // e.g., 'bg-blue-100 text-blue-800'
 }
 
 export interface User {
@@ -10,7 +17,7 @@ export interface User {
   email: string;
   password?: string; // In a real app, never store plain text
   role: UserRole;
-  specialty?: string;
+  specialtyId?: string; // Changed from specialty string to ID relation
   licenseNumber?: string; // Nº Cédula
   phone?: string;
   paymentPerSession?: number;
@@ -18,7 +25,7 @@ export interface User {
   active: boolean;
 }
 
-export interface PatientDocument {
+export interface UtenteDocument {
   id: string;
   name: string;
   type: string; // 'PDF', 'IMG', etc.
@@ -27,7 +34,7 @@ export interface PatientDocument {
   size?: string;
 }
 
-export interface Patient {
+export interface Utente {
   id: string;
   name: string;
   birthDate: string; // ISO string YYYY-MM-DD
@@ -35,19 +42,19 @@ export interface Patient {
   phone: string;
   email: string;
   responsibleName: string;
-  therapistId: string;
-  costPerSession: number; // Preço Base por Sessão
+  profissionalId: string;
   customPrices?: Record<string, number>; // Chave: SessionType ID, Valor: Preço Personalizado
   diagnosis: string;
   address: string;
   clinicalNotes: string;
   active: boolean;
-  documents?: PatientDocument[]; // New field
+  documents?: UtenteDocument[]; // New field
 }
 
 export interface SessionType {
   id: string;
   name: string;
+  specialtyId: string; // Changed from specialty: Specialty
   defaultDuration: number;
   defaultCost: number;
   active: boolean;
@@ -55,8 +62,8 @@ export interface SessionType {
 
 export interface Session {
   id: string;
-  patientId: string;
-  therapistId: string;
+  utenteId: string;
+  profissionalId: string;
   sessionTypeId?: string; // Ligação ao tipo de sessão
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
@@ -71,14 +78,15 @@ export interface Session {
 
 export interface Appointment {
   id: string;
-  patientId: string;
-  therapistId: string;
+  utenteId: string;
+  profissionalId: string;
   sessionTypeId?: string; // Ligação ao tipo de sessão
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   durationMinutes: number;
   notes: string;
   status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  groupId?: string; // ID to link recurring appointments
 }
 
 export interface WaitingListEntry {

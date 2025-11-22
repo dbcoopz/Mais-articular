@@ -1,14 +1,15 @@
+
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input, TextArea } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
-import { WaitingListEntry, UserRole, Patient } from '../types';
+import { WaitingListEntry, UserRole, Utente } from '../types';
 import { Plus, Search, Edit2, Trash2, AlertTriangle, Calendar, Clock, Phone, UserPlus, Check } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const WaitingList: React.FC = () => {
-  const { waitingList, users, currentUser, addToWaitingList, updateWaitingListEntry, deleteFromWaitingList, addPatient, showToast } = useApp();
+  const { waitingList, users, currentUser, addToWaitingList, updateWaitingListEntry, deleteFromWaitingList, addUtente, showToast } = useApp();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
@@ -37,8 +38,8 @@ export const WaitingList: React.FC = () => {
 
   const [formData, setFormData] = useState(initialFormState);
 
-  // Form for Converting to Patient (extends Patient type)
-  const [convertFormData, setConvertFormData] = useState<Partial<Patient>>({});
+  // Form for Converting to Utente (extends Utente type)
+  const [convertFormData, setConvertFormData] = useState<Partial<Utente>>({});
 
   // --- HANDLERS ---
 
@@ -83,7 +84,7 @@ export const WaitingList: React.FC = () => {
 
   const initiateConversion = (entry: WaitingListEntry) => {
     setEntryToConvert(entry);
-    // Pre-fill Patient Form Data with info from Waiting List
+    // Pre-fill Utente Form Data with info from Waiting List
     setConvertFormData({
         name: entry.name,
         birthDate: entry.birthDate,
@@ -94,8 +95,7 @@ export const WaitingList: React.FC = () => {
         diagnosis: entry.reason, // Assume reason as initial diagnosis
         address: '',
         clinicalNotes: entry.notes ? `[Lista de Espera] ${entry.notes}` : '',
-        therapistId: isAdmin ? '' : currentUser?.id || '',
-        costPerSession: 0,
+        profissionalId: isAdmin ? '' : currentUser?.id || '',
         active: true
     });
     setIsConvertModalOpen(true);
@@ -105,8 +105,8 @@ export const WaitingList: React.FC = () => {
     e.preventDefault();
     if (!entryToConvert) return;
 
-    // Create the patient
-    addPatient({
+    // Create the utente
+    addUtente({
         id: Math.random().toString(36).substr(2, 9),
         name: convertFormData.name || '',
         birthDate: convertFormData.birthDate || '',
@@ -114,8 +114,7 @@ export const WaitingList: React.FC = () => {
         phone: convertFormData.phone || '',
         email: convertFormData.email || '',
         responsibleName: convertFormData.responsibleName || '',
-        therapistId: convertFormData.therapistId || '',
-        costPerSession: convertFormData.costPerSession || 0,
+        profissionalId: convertFormData.profissionalId || '',
         diagnosis: convertFormData.diagnosis || '',
         address: convertFormData.address || '',
         clinicalNotes: convertFormData.clinicalNotes || '',
@@ -125,7 +124,7 @@ export const WaitingList: React.FC = () => {
     // Remove from waiting list
     deleteFromWaitingList(entryToConvert.id);
     
-    showToast('Paciente inscrito com sucesso!');
+    showToast('Utente inscrito com sucesso!');
     setIsConvertModalOpen(false);
     setEntryToConvert(null);
   };
@@ -248,11 +247,11 @@ export const WaitingList: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Conversion to Patient Modal */}
-      <Modal isOpen={isConvertModalOpen} onClose={() => setIsConvertModalOpen(false)} title="Inscrever Paciente" maxWidth="2xl">
+      {/* Conversion to Utente Modal */}
+      <Modal isOpen={isConvertModalOpen} onClose={() => setIsConvertModalOpen(false)} title="Inscrever Utente" maxWidth="2xl">
          <div className="bg-green-50 border border-green-200 p-3 rounded-lg mb-4 text-sm text-green-800 flex items-center">
             <Check size={16} className="mr-2" />
-            A converter <strong>{entryToConvert?.name}</strong> em paciente ativo.
+            A converter <strong>{entryToConvert?.name}</strong> em utente ativo.
          </div>
          
          <form onSubmit={handleConvertSubmit} className="space-y-4">
@@ -261,18 +260,18 @@ export const WaitingList: React.FC = () => {
                 <Input label="Nome" value={convertFormData.name} disabled className="bg-gray-100 cursor-not-allowed" />
                 <Input label="Responsável" value={convertFormData.responsibleName} disabled className="bg-gray-100 cursor-not-allowed" />
                 
-                {/* Fields to configure for the new patient */}
+                {/* Fields to configure for the new utente */}
                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Terapeuta Atribuído *</label>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">Profissional Atribuído *</label>
                    {isAdmin ? (
                        <select 
                          className="w-full bg-white text-gray-900 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-[#1e3a5f] focus:border-[#1e3a5f]"
-                         value={convertFormData.therapistId}
-                         onChange={e => setConvertFormData({...convertFormData, therapistId: e.target.value})}
+                         value={convertFormData.profissionalId}
+                         onChange={e => setConvertFormData({...convertFormData, profissionalId: e.target.value})}
                          required
                        >
                          <option value="">Selecione</option>
-                         {users.filter(u => u.role === UserRole.THERAPIST).map(u => (
+                         {users.filter(u => u.role === UserRole.PROFISSIONAL).map(u => (
                            <option key={u.id} value={u.id}>{u.name}</option>
                          ))}
                        </select>
@@ -280,9 +279,6 @@ export const WaitingList: React.FC = () => {
                        <Input value={currentUser?.name} disabled className="bg-gray-100" />
                    )}
                  </div>
-                 {isAdmin && (
-                    <Input label="Custo por Sessão (€) *" type="number" value={convertFormData.costPerSession} onChange={e => setConvertFormData({...convertFormData, costPerSession: parseFloat(e.target.value)})} required />
-                 )}
             </div>
             
             <Input label="Diagnóstico Inicial" value={convertFormData.diagnosis} onChange={e => setConvertFormData({...convertFormData, diagnosis: e.target.value})} />

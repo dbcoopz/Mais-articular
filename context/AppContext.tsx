@@ -1,7 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, PropsWithChildren } from 'react';
-import { User, Patient, Session, Appointment, UserRole, WaitingListEntry, SessionType, PatientDocument } from '../types';
-import { INITIAL_USERS, INITIAL_PATIENTS, INITIAL_SESSIONS, INITIAL_APPOINTMENTS, INITIAL_WAITING_LIST, INITIAL_SESSION_TYPES } from '../constants';
+import { User, Utente, Session, Appointment, UserRole, WaitingListEntry, SessionType, UtenteDocument, Specialty } from '../types';
+import { INITIAL_USERS, INITIAL_UTENTES, INITIAL_SESSIONS, INITIAL_APPOINTMENTS, INITIAL_WAITING_LIST, INITIAL_SESSION_TYPES, INITIAL_SPECIALTIES } from '../constants';
+import { addWeeks, parseISO, format, isAfter } from 'date-fns';
 
 export type ToastMessage = {
   id: string;
@@ -12,25 +13,28 @@ export type ToastMessage = {
 interface AppContextType {
   currentUser: User | null;
   users: User[];
-  patients: Patient[];
+  utentes: Utente[];
   sessions: Session[];
   appointments: Appointment[];
   waitingList: WaitingListEntry[];
   sessionTypes: SessionType[];
+  specialties: Specialty[]; // New
   toasts: ToastMessage[];
   login: (email: string, pass: string) => boolean;
   logout: () => void;
   addUser: (user: User) => void;
   updateUser: (user: User) => void;
   deleteUser: (id: string) => void;
-  addPatient: (patient: Patient) => void;
-  updatePatient: (patient: Patient) => void;
-  deletePatient: (id: string) => void;
+  addUtente: (utente: Utente) => void;
+  updateUtente: (utente: Utente) => void;
+  deleteUtente: (id: string) => void;
   addSession: (session: Session) => void;
   updateSession: (session: Session) => void;
   deleteSession: (id: string) => void;
   addAppointment: (apt: Appointment) => void;
+  addAppointmentSeries: (apt: Appointment, repeatUntil: string) => void; // New
   updateAppointment: (apt: Appointment) => void;
+  updateAppointmentSeries: (apt: Appointment) => void; // New
   deleteAppointment: (id: string) => void;
   addToWaitingList: (entry: WaitingListEntry) => void;
   updateWaitingListEntry: (entry: WaitingListEntry) => void;
@@ -38,8 +42,11 @@ interface AppContextType {
   addSessionType: (type: SessionType) => void;
   updateSessionType: (type: SessionType) => void;
   deleteSessionType: (id: string) => void;
-  addPatientDocument: (patientId: string, doc: PatientDocument) => void; // New
-  deletePatientDocument: (patientId: string, docId: string) => void; // New
+  addSpecialty: (specialty: Specialty) => void; // New
+  updateSpecialty: (specialty: Specialty) => void; // New
+  deleteSpecialty: (id: string) => void; // New
+  addUtenteDocument: (utenteId: string, doc: UtenteDocument) => void;
+  deleteUtenteDocument: (utenteId: string, docId: string) => void;
   restoreData: (data: any) => void;
   clearAllData: () => void;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -61,9 +68,9 @@ export const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
     return INITIAL_USERS;
   });
 
-  const [patients, setPatients] = useState<Patient[]>(() => {
-    const saved = localStorage.getItem('ma_patients');
-    return saved ? JSON.parse(saved) : INITIAL_PATIENTS;
+  const [utentes, setUtentes] = useState<Utente[]>(() => {
+    const saved = localStorage.getItem('ma_utentes');
+    return saved ? JSON.parse(saved) : INITIAL_UTENTES;
   });
 
   const [sessions, setSessions] = useState<Session[]>(() => {
@@ -86,13 +93,20 @@ export const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
     return saved ? JSON.parse(saved) : INITIAL_SESSION_TYPES;
   });
 
+  const [specialties, setSpecialties] = useState<Specialty[]>(() => {
+    const saved = localStorage.getItem('ma_specialties');
+    return saved ? JSON.parse(saved) : INITIAL_SPECIALTIES;
+  });
+
   // Persistence Effects
   useEffect(() => localStorage.setItem('ma_users', JSON.stringify(users)), [users]);
-  useEffect(() => localStorage.setItem('ma_patients', JSON.stringify(patients)), [patients]);
+  useEffect(() => localStorage.setItem('ma_utentes', JSON.stringify(utentes)), [utentes]);
   useEffect(() => localStorage.setItem('ma_sessions', JSON.stringify(sessions)), [sessions]);
   useEffect(() => localStorage.setItem('ma_appointments', JSON.stringify(appointments)), [appointments]);
   useEffect(() => localStorage.setItem('ma_waitingList', JSON.stringify(waitingList)), [waitingList]);
   useEffect(() => localStorage.setItem('ma_sessionTypes', JSON.stringify(sessionTypes)), [sessionTypes]);
+  useEffect(() => localStorage.setItem('ma_specialties', JSON.stringify(specialties)), [specialties]);
+
 
   // Auth Logic
   useEffect(() => {
@@ -144,19 +158,19 @@ export const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
     setUsers(prev => prev.filter(u => u.id !== id));
   };
 
-  const addPatient = (patient: Patient) => setPatients(prev => [...prev, patient]);
-  const updatePatient = (patient: Patient) => {
-    setPatients(prev => prev.map(p => p.id === patient.id ? patient : p));
+  const addUtente = (utente: Utente) => setUtentes(prev => [...prev, utente]);
+  const updateUtente = (utente: Utente) => {
+    setUtentes(prev => prev.map(p => p.id === utente.id ? utente : p));
   };
 
-  const deletePatient = (id: string) => {
-    setPatients(prev => prev.filter(p => p.id !== id));
+  const deleteUtente = (id: string) => {
+    setUtentes(prev => prev.filter(p => p.id !== id));
   };
   
   // Document Mutations
-  const addPatientDocument = (patientId: string, doc: PatientDocument) => {
-    setPatients(prev => prev.map(p => {
-      if (p.id === patientId) {
+  const addUtenteDocument = (utenteId: string, doc: UtenteDocument) => {
+    setUtentes(prev => prev.map(p => {
+      if (p.id === utenteId) {
         const currentDocs = p.documents || [];
         return { ...p, documents: [...currentDocs, doc] };
       }
@@ -164,9 +178,9 @@ export const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
     }));
   };
 
-  const deletePatientDocument = (patientId: string, docId: string) => {
-    setPatients(prev => prev.map(p => {
-      if (p.id === patientId) {
+  const deleteUtenteDocument = (utenteId: string, docId: string) => {
+    setUtentes(prev => prev.map(p => {
+      if (p.id === utenteId) {
         const currentDocs = p.documents || [];
         return { ...p, documents: currentDocs.filter(d => d.id !== docId) };
       }
@@ -185,9 +199,56 @@ export const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
   };
 
   const addAppointment = (apt: Appointment) => setAppointments(prev => [...prev, apt]);
+  
+  // New: Add Series
+  const addAppointmentSeries = (apt: Appointment, repeatUntil: string) => {
+    const groupId = Math.random().toString(36).substr(2, 9);
+    const newAppointments: Appointment[] = [];
+    const startDate = parseISO(apt.date);
+    const endDate = parseISO(repeatUntil);
+    let currentDate = startDate;
+
+    // While current date is same or before end date
+    while (!isAfter(currentDate, endDate)) {
+        newAppointments.push({
+            ...apt,
+            id: Math.random().toString(36).substr(2, 9),
+            date: format(currentDate, 'yyyy-MM-dd'),
+            groupId: groupId
+        });
+        currentDate = addWeeks(currentDate, 1);
+    }
+    
+    setAppointments(prev => [...prev, ...newAppointments]);
+  };
+
   const updateAppointment = (apt: Appointment) => {
     setAppointments(prev => prev.map(a => a.id === apt.id ? apt : a));
   };
+
+  // New: Update Series
+  const updateAppointmentSeries = (apt: Appointment) => {
+    if (!apt.groupId) return;
+    
+    // Only update this and future appointments in the series
+    const currentDate = parseISO(apt.date);
+
+    setAppointments(prev => prev.map(a => {
+        // Check if part of same group AND is today or future
+        if (a.groupId === apt.groupId && !isAfter(parseISO(apt.date), parseISO(a.date))) {
+            return {
+                ...a,
+                time: apt.time,
+                durationMinutes: apt.durationMinutes,
+                notes: apt.notes,
+                sessionTypeId: apt.sessionTypeId,
+                profissionalId: apt.profissionalId
+            };
+        }
+        return a;
+    }));
+  };
+
   const deleteAppointment = (id: string) => {
     setAppointments(prev => prev.filter(a => a.id !== id));
   }
@@ -206,25 +267,35 @@ export const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const updateSessionType = (type: SessionType) => setSessionTypes(prev => prev.map(t => t.id === type.id ? type : t));
   const deleteSessionType = (id: string) => setSessionTypes(prev => prev.filter(t => t.id !== id));
 
+  // Specialty Mutations
+  const addSpecialty = (specialty: Specialty) => setSpecialties(prev => [...prev, specialty]);
+  const updateSpecialty = (specialty: Specialty) => setSpecialties(prev => prev.map(s => s.id === specialty.id ? specialty : s));
+  const deleteSpecialty = (id: string) => {
+    // Also remove any session types associated with this specialty
+    setSessionTypes(prev => prev.filter(st => st.specialtyId !== id));
+    setSpecialties(prev => prev.filter(s => s.id !== id));
+  };
+
   // System Functions
   const restoreData = (data: any) => {
     if (data.users) setUsers(data.users);
-    if (data.patients) setPatients(data.patients);
+    if (data.utentes) setUtentes(data.utentes);
     if (data.sessions) setSessions(data.sessions);
     if (data.appointments) setAppointments(data.appointments);
     if (data.waitingList) setWaitingList(data.waitingList);
     if (data.sessionTypes) setSessionTypes(data.sessionTypes);
+    if (data.specialties) setSpecialties(data.specialties);
   };
 
   const clearAllData = () => {
       setUsers(INITIAL_USERS);
-      setPatients([]);
+      setUtentes([]);
       setSessions([]);
       setAppointments([]);
       setWaitingList([]);
       setSessionTypes(INITIAL_SESSION_TYPES);
+      setSpecialties(INITIAL_SPECIALTIES);
       localStorage.clear();
-      // Force reload to clear persistent state
       window.location.reload();
   };
 
@@ -232,25 +303,28 @@ export const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
     <AppContext.Provider value={{
       currentUser,
       users,
-      patients,
+      utentes,
       sessions,
       appointments,
       waitingList,
       sessionTypes,
+      specialties,
       toasts,
       login,
       logout,
       addUser,
       updateUser,
       deleteUser,
-      addPatient,
-      updatePatient,
-      deletePatient,
+      addUtente,
+      updateUtente,
+      deleteUtente,
       addSession,
       updateSession,
       deleteSession,
       addAppointment,
+      addAppointmentSeries, // New
       updateAppointment,
+      updateAppointmentSeries, // New
       deleteAppointment,
       addToWaitingList,
       updateWaitingListEntry,
@@ -258,8 +332,11 @@ export const AppProvider: React.FC<PropsWithChildren> = ({ children }) => {
       addSessionType,
       updateSessionType,
       deleteSessionType,
-      addPatientDocument,
-      deletePatientDocument,
+      addSpecialty,
+      updateSpecialty,
+      deleteSpecialty,
+      addUtenteDocument,
+      deleteUtenteDocument,
       restoreData,
       clearAllData,
       showToast,

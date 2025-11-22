@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
@@ -38,7 +39,7 @@ export const Login: React.FC = () => {
           {/* Fallback Text if image fails to load */}
           <h1 className="hidden text-3xl font-bold text-[#1e3a5f] mb-2">MAIS ARTICULAR</h1>
           
-          <p className="text-gray-500">Gestão de Terapia da Fala</p>
+          <p className="text-gray-500">Gestão Clínica</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -66,7 +67,7 @@ export const Login: React.FC = () => {
         
         <div className="mt-6 text-center space-y-1">
            <p className="text-xs text-gray-400">Admin: "admin@maisarticular.com" / "admin"</p>
-           <p className="text-xs text-gray-400">Terapeuta: "terapeuta@maisarticular.com" / "demo"</p>
+           <p className="text-xs text-gray-400">Profissional: "profissional@maisarticular.com" / "demo"</p>
         </div>
       </div>
     </div>

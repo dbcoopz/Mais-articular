@@ -5,10 +5,10 @@ import { Button } from '../components/ui/Button';
 import { Input, TextArea } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { User, UserRole } from '../types';
-import { Plus, UserCog, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, UserCog, Trash2, AlertTriangle, Briefcase } from 'lucide-react';
 
-export const Therapists: React.FC = () => {
-  const { users, addUser, updateUser, deleteUser, showToast } = useApp();
+export const Profissionais: React.FC = () => {
+  const { users, addUser, updateUser, deleteUser, specialties, showToast } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProfissional, setEditingProfissional] = useState<User | null>(null);
   
@@ -21,9 +21,8 @@ export const Therapists: React.FC = () => {
       name: '',
       email: '',
       password: '',
-      // Fix: UserRole.THERAPIST -> UserRole.PROFISSIONAL
       role: UserRole.PROFISSIONAL,
-      specialtyId: '',
+      specialtyId: '', // Changed from specialty string to ID
       licenseNumber: '',
       phone: '',
       paymentPerSession: 0,
@@ -73,8 +72,17 @@ export const Therapists: React.FC = () => {
     }
   };
 
-  // Fix: UserRole.THERAPIST -> UserRole.PROFISSIONAL
   const profissionais = users.filter(u => u.role === UserRole.PROFISSIONAL);
+
+  const getSpecialtyName = (id?: string) => {
+      const spec = specialties.find(s => s.id === id);
+      return spec ? spec.name : 'Sem especialidade';
+  };
+
+  const getSpecialtyColor = (id?: string) => {
+      const spec = specialties.find(s => s.id === id);
+      return spec ? spec.color : 'bg-gray-100 text-gray-500';
+  };
 
   return (
     <div>
@@ -89,45 +97,49 @@ export const Therapists: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {profissionais.map(profissional => (
-              <div key={profissional.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                  <div className="flex items-center mb-4">
-                      {/* Updated Avatar Colors */}
-                      <div className="h-14 w-14 rounded-full bg-blue-50 text-[#1e3a5f] flex items-center justify-center text-xl font-bold mr-4 border border-blue-100">
-                          {profissional.name.charAt(0)}
-                      </div>
-                      <div>
-                          <h3 className="font-bold text-gray-900">{profissional.name}</h3>
-                          <p className="text-sm text-gray-500">{profissional.specialtyId}</p>
-                      </div>
-                  </div>
-                  <div className="space-y-2 text-sm text-gray-600 mb-4">
-                      <p><span className="font-medium text-[#1e3a5f]">Cédula:</span> {profissional.licenseNumber}</p>
-                      <p><span className="font-medium text-[#1e3a5f]">Tel:</span> {profissional.phone}</p>
-                      <p><span className="font-medium text-[#1e3a5f]">Email:</span> {profissional.email}</p>
-                      <p className="text-[#1e3a5f] font-bold pt-2">Pagamento/Sessão: €{profissional.paymentPerSession}</p>
-                  </div>
-                  <div className="pt-4 border-t border-gray-50 flex justify-between items-center">
-                      <span className={`px-2 py-1 text-xs rounded font-medium ${profissional.active ? 'bg-green-50 text-green-800 border border-green-100' : 'bg-red-50 text-red-800 border border-red-100'}`}>
-                          {profissional.active ? 'Ativo' : 'Inativo'}
-                      </span>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => handleOpenModal(profissional)} title="Editar">
-                            <UserCog size={16} className="text-gray-400 hover:text-[#1e3a5f]" />
-                        </Button>
-                        <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="hover:bg-red-50"
-                            onClick={() => handleDeleteClick(profissional.id)}
-                            title="Apagar"
-                        >
-                            <Trash2 size={16} className="text-gray-400 hover:text-red-600" />
-                        </Button>
-                      </div>
-                  </div>
-              </div>
-          ))}
+          {profissionais.map(profissional => {
+              const specColor = getSpecialtyColor(profissional.specialtyId);
+              return (
+                <div key={profissional.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <div className="flex items-center mb-4">
+                        <div className="h-14 w-14 rounded-full bg-blue-50 text-[#1e3a5f] flex items-center justify-center text-xl font-bold mr-4 border border-blue-100">
+                            {profissional.name.charAt(0)}
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900">{profissional.name}</h3>
+                            <span className={`text-xs px-2 py-0.5 rounded font-medium ${specColor}`}>
+                                {getSpecialtyName(profissional.specialtyId)}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="space-y-2 text-sm text-gray-600 mb-4">
+                        <p><span className="font-medium text-[#1e3a5f]">Cédula:</span> {profissional.licenseNumber || '-'}</p>
+                        <p><span className="font-medium text-[#1e3a5f]">Tel:</span> {profissional.phone || '-'}</p>
+                        <p><span className="font-medium text-[#1e3a5f]">Email:</span> {profissional.email}</p>
+                        <p className="text-[#1e3a5f] font-bold pt-2">Pagamento/Sessão: €{profissional.paymentPerSession}</p>
+                    </div>
+                    <div className="pt-4 border-t border-gray-50 flex justify-between items-center">
+                        <span className={`px-2 py-1 text-xs rounded font-medium ${profissional.active ? 'bg-green-50 text-green-800 border border-green-100' : 'bg-red-50 text-red-800 border border-red-100'}`}>
+                            {profissional.active ? 'Ativo' : 'Inativo'}
+                        </span>
+                        <div className="flex gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => handleOpenModal(profissional)} title="Editar">
+                                <UserCog size={16} className="text-gray-400 hover:text-[#1e3a5f]" />
+                            </Button>
+                            <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="hover:bg-red-50"
+                                onClick={() => handleDeleteClick(profissional.id)}
+                                title="Apagar"
+                            >
+                                <Trash2 size={16} className="text-gray-400 hover:text-red-600" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+              );
+          })}
           {profissionais.length === 0 && (
               <div className="col-span-full text-center py-12 text-gray-400">Nenhum profissional registado.</div>
           )}
@@ -140,7 +152,20 @@ export const Therapists: React.FC = () => {
               <Input label="Password *" type="password" value={formData.password || ''} onChange={e => setFormData({...formData, password: e.target.value})} required />
               
               <div className="grid grid-cols-2 gap-4">
-                 <Input label="Especialidade" value={formData.specialtyId} onChange={e => setFormData({...formData, specialtyId: e.target.value})} />
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Especialidade *</label>
+                    <select 
+                        className="w-full bg-white text-gray-900 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-[#1e3a5f] focus:border-[#1e3a5f]"
+                        value={formData.specialtyId}
+                        onChange={e => setFormData({...formData, specialtyId: e.target.value})}
+                        required
+                    >
+                        <option value="">Selecione...</option>
+                        {specialties.map(spec => (
+                            <option key={spec.id} value={spec.id}>{spec.name}</option>
+                        ))}
+                    </select>
+                 </div>
                  <Input label="Nº Cédula" value={formData.licenseNumber} onChange={e => setFormData({...formData, licenseNumber: e.target.value})} />
               </div>
               

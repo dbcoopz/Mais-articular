@@ -4,13 +4,11 @@ import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input, TextArea } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
-// Fix: Renamed Patient to Utente as per types.ts
 import { Utente, UserRole } from '../types';
 import { Plus, Search, Edit2, User, Trash2, AlertTriangle, FileText, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export const Patients: React.FC = () => {
-  // Fix: Renamed variables to use 'utente' terminology from useApp context
+export const Utentes: React.FC = () => {
   const { utentes, users, sessionTypes, addUtente, updateUtente, deleteUtente, currentUser, showToast } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,7 +21,6 @@ export const Patients: React.FC = () => {
 
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
-  // Fix: Updated to match Utente type: removed costPerSession, changed therapistId to profissionalId
   const initialFormState: Omit<Utente, 'id'> = {
     name: '',
     birthDate: '',
@@ -52,7 +49,6 @@ export const Patients: React.FC = () => {
       // If therapist, auto-assign current user id
       setFormData({
           ...initialFormState,
-          // Fix: therapistId -> profissionalId
           profissionalId: isAdmin ? '' : currentUser?.id || ''
       });
     }
@@ -104,7 +100,6 @@ export const Patients: React.FC = () => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           p.responsibleName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Fix: therapistId -> profissionalId
     const matchesRole = isAdmin ? true : p.profissionalId === currentUser?.id;
 
     return matchesSearch && matchesRole;
@@ -114,7 +109,6 @@ export const Patients: React.FC = () => {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          {/* Fix: Pacientes -> Utentes */}
           <h1 className="text-2xl font-bold text-[#1e3a5f]">Utentes</h1>
           <p className="text-gray-500">{filteredUtentes.length} utente(s) encontrado(s)</p>
         </div>
@@ -225,7 +219,6 @@ export const Patients: React.FC = () => {
                   onChange={e => setFormData({...formData, profissionalId: e.target.value})}
                 >
                   <option value="">Selecione</option>
-                  {/* Fix: UserRole.THERAPIST -> UserRole.PROFISSIONAL */}
                   {users.filter(u => u.role === UserRole.PROFISSIONAL).map(u => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
@@ -234,7 +227,7 @@ export const Patients: React.FC = () => {
                 <Input value={currentUser?.name} disabled className="bg-gray-100" />
             )}
           </div>
-          
+
           <Input label="Diagnóstico" value={formData.diagnosis} onChange={e => setFormData({...formData, diagnosis: e.target.value})} />
           <Input label="Morada" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
           <TextArea label="Observações Clínicas" rows={3} value={formData.clinicalNotes} onChange={e => setFormData({...formData, clinicalNotes: e.target.value})} />

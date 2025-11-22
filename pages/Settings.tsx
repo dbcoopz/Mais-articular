@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
@@ -5,7 +6,7 @@ import { Modal } from '../components/ui/Modal';
 import { Download, Upload, AlertTriangle, Database, HardDrive, Check } from 'lucide-react';
 
 export const Settings: React.FC = () => {
-  const { users, patients, sessions, appointments, waitingList, restoreData, clearAllData, showToast } = useApp();
+  const { users, utentes, sessions, appointments, waitingList, sessionTypes, specialties, restoreData, clearAllData, showToast } = useApp();
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -13,10 +14,12 @@ export const Settings: React.FC = () => {
   const handleExport = () => {
     const data = {
       users,
-      patients,
+      utentes,
       sessions,
       appointments,
       waitingList,
+      sessionTypes,
+      specialties,
       exportDate: new Date().toISOString(),
       appVersion: '1.0'
     };
@@ -90,7 +93,7 @@ export const Settings: React.FC = () => {
                       <Download size={20} /> Exportar Dados
                    </div>
                    <p className="text-sm text-gray-600 mb-4">
-                      Descarregue um ficheiro .json com todos os dados (pacientes, sessões, etc.). Guarde este ficheiro num local seguro (ex: Google Drive, Pen USB).
+                      Descarregue um ficheiro .json com todos os dados (utentes, sessões, etc.). Guarde este ficheiro num local seguro (ex: Google Drive, Pen USB).
                    </p>
                    <Button onClick={handleExport} variant="outline" className="w-full">
                       Baixar Backup
@@ -146,7 +149,7 @@ export const Settings: React.FC = () => {
              <div className="flex items-center justify-between">
                 <div>
                    <h3 className="font-bold text-gray-900">Reset de Fábrica</h3>
-                   <p className="text-sm text-gray-500 mt-1">Apaga todos os pacientes, sessões e configurações. Mantém apenas os utilizadores iniciais.</p>
+                   <p className="text-sm text-gray-500 mt-1">Apaga todos os utentes, sessões e configurações. Mantém apenas os utilizadores iniciais.</p>
                 </div>
                 <Button variant="danger" onClick={() => setIsResetModalOpen(true)}>
                    Apagar Tudo
@@ -161,7 +164,7 @@ export const Settings: React.FC = () => {
               <AlertTriangle size={48} className="text-red-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-gray-900 mb-2">Tem a certeza absoluta?</h3>
               <p className="text-gray-600 mb-6">
-                 Esta ação irá <strong>apagar permanentemente</strong> todos os dados registados na aplicação neste dispositivo (Pacientes, Sessões, Faturação, Lista de Espera). 
+                 Esta ação irá <strong>apagar permanentemente</strong> todos os dados registados na aplicação neste dispositivo (Utentes, Sessões, Faturação, Lista de Espera). 
                  <br/><br/>
                  Esta ação não pode ser desfeita.
               </p>

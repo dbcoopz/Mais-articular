@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
@@ -7,8 +8,8 @@ import { format } from 'date-fns';
 import { UserRole } from '../types';
 
 export const Reports: React.FC = () => {
-  const { sessions, patients, users } = useApp();
-  const [reportType, setReportType] = useState('therapists');
+  const { sessions, utentes, users } = useApp();
+  const [reportType, setReportType] = useState('profissionais');
   const [startDate, setStartDate] = useState(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
@@ -24,10 +25,10 @@ export const Reports: React.FC = () => {
         return d >= start && d <= end;
     });
 
-    if (reportType === 'therapists') {
-        const therapists = users.filter(u => u.role === UserRole.THERAPIST);
-        return therapists.map(t => {
-            const tSessions = filteredSessions.filter(s => s.therapistId === t.id);
+    if (reportType === 'profissionais') {
+        const profissionais = users.filter(u => u.role === UserRole.PROFISSIONAL);
+        return profissionais.map(t => {
+            const tSessions = filteredSessions.filter(s => s.profissionalId === t.id);
             const revenue = tSessions.reduce((acc, s) => acc + s.cost, 0);
             const earnings = tSessions.reduce((acc, s) => acc + s.therapistPayment, 0);
             return {
@@ -47,9 +48,9 @@ export const Reports: React.FC = () => {
   const handleDownload = () => {
       let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel unicode support
 
-      if (reportType === 'therapists') {
+      if (reportType === 'profissionais') {
           // Header
-          csvContent += "Nome do Terapeuta;Sessões Realizadas;Receita Gerada (€);Pagamento Terapeuta (€);Lucro Clínica (€)\n";
+          csvContent += "Nome do Profissional;Sessões Realizadas;Receita Gerada (€);Pagamento Profissional (€);Lucro Clínica (€)\n";
           
           // Rows
           (reportData as any[]).forEach(row => {
@@ -63,17 +64,17 @@ export const Reports: React.FC = () => {
           csvContent += `TOTAL;${totalSessions};${totalRevenue.toFixed(2).replace('.', ',')};;\n`;
 
       } else if (reportType === 'sessions') {
-          csvContent += "Data;Paciente;Terapeuta;Atividades;Valor (€)\n";
+          csvContent += "Data;Utente;Profissional;Atividades;Valor (€)\n";
           (reportData as any[]).forEach(s => {
-              const p = patients.find(p => p.id === s.patientId)?.name || 'N/A';
-              const t = users.find(u => u.id === s.therapistId)?.name || 'N/A';
+              const p = utentes.find(p => p.id === s.utenteId)?.name || 'N/A';
+              const t = users.find(u => u.id === s.profissionalId)?.name || 'N/A';
               const line = `${s.date};${p};${t};"${s.activities.replace(/"/g, '""')}";${s.cost.toFixed(2).replace('.', ',')}`;
               csvContent += line + "\n";
           });
-      } else if (reportType === 'patients') {
-          csvContent += "Nome;Idade;Responsável;Telefone;Estado;Terapeuta\n";
-          patients.forEach(p => {
-               const t = users.find(u => u.id === p.therapistId)?.name || 'N/A';
+      } else if (reportType === 'utentes') {
+          csvContent += "Nome;Idade;Responsável;Telefone;Estado;Profissional\n";
+          utentes.forEach(p => {
+               const t = users.find(u => u.id === p.profissionalId)?.name || 'N/A';
                const line = `${p.name};${p.age};${p.responsibleName};${p.phone};${p.active ? 'Ativo' : 'Inativo'};${t}`;
                csvContent += line + "\n";
           });
@@ -91,13 +92,13 @@ export const Reports: React.FC = () => {
   // Aggregates for Preview
   const totalSessions = reportType === 'sessions' 
     ? (reportData as any[]).length 
-    : reportType === 'therapists' 
+    : reportType === 'profissionais' 
         ? (reportData as any[]).reduce((acc, r) => acc + r.count, 0)
         : 0;
 
   const totalRevenue = reportType === 'sessions'
     ? (reportData as any[]).reduce((acc, s) => acc + s.cost, 0)
-    : reportType === 'therapists'
+    : reportType === 'profissionais'
         ? (reportData as any[]).reduce((acc, r) => acc + r.revenue, 0)
         : 0;
 
@@ -110,11 +111,11 @@ export const Reports: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div 
-                onClick={() => setReportType('therapists')}
-                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'therapists' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50 text-gray-600'}`}
+                onClick={() => setReportType('profissionais')}
+                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'profissionais' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50 text-gray-600'}`}
             >
-                <div className={`p-2 rounded-lg ${reportType === 'therapists' ? 'bg-blue-100 text-[#1e3a5f]' : 'bg-gray-100 text-gray-500'}`}><Users size={20}/></div>
-                Desempenho Terapeutas
+                <div className={`p-2 rounded-lg ${reportType === 'profissionais' ? 'bg-blue-100 text-[#1e3a5f]' : 'bg-gray-100 text-gray-500'}`}><Users size={20}/></div>
+                Desempenho Profissionais
             </div>
             <div 
                 onClick={() => setReportType('sessions')}
@@ -124,24 +125,24 @@ export const Reports: React.FC = () => {
                 Histórico de Sessões
             </div>
             <div 
-                onClick={() => setReportType('patients')}
-                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'patients' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50 text-gray-600'}`}
+                onClick={() => setReportType('utentes')}
+                className={`p-4 rounded-xl font-medium cursor-pointer border-2 transition-all flex items-center gap-3 ${reportType === 'utentes' ? 'border-[#1e3a5f] bg-blue-50 text-[#1e3a5f]' : 'border-transparent bg-white hover:bg-gray-50 text-gray-600'}`}
             >
-                <div className={`p-2 rounded-lg ${reportType === 'patients' ? 'bg-blue-100 text-[#1e3a5f]' : 'bg-gray-100 text-gray-500'}`}><Users size={20}/></div>
-                Lista de Pacientes
+                <div className={`p-2 rounded-lg ${reportType === 'utentes' ? 'bg-blue-100 text-[#1e3a5f]' : 'bg-gray-100 text-gray-500'}`}><Users size={20}/></div>
+                Lista de Utentes
             </div>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-6">
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-                    {reportType !== 'patients' && (
+                    {reportType !== 'utentes' && (
                         <>
                             <Input label="Data Inicial" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                             <Input label="Data Final" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
                         </>
                     )}
-                    {reportType === 'patients' && <div className="col-span-2 text-sm text-gray-500 flex items-center">Este relatório exporta a base de dados completa de pacientes.</div>}
+                    {reportType === 'utentes' && <div className="col-span-2 text-sm text-gray-500 flex items-center">Este relatório exporta a base de dados completa de utentes.</div>}
                 </div>
                 <Button onClick={handleDownload} className="flex items-center whitespace-nowrap">
                     <Download size={18} className="mr-2" /> 
@@ -156,12 +157,12 @@ export const Reports: React.FC = () => {
                     Visualização de Dados
                 </h3>
 
-                {reportType === 'therapists' && (
+                {reportType === 'profissionais' && (
                     <div className="overflow-x-auto rounded-lg border border-gray-200">
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-50 text-gray-700 font-semibold uppercase text-xs">
                                 <tr>
-                                    <th className="p-4">Terapeuta</th>
+                                    <th className="p-4">Profissional</th>
                                     <th className="p-4 text-center">Sessões</th>
                                     <th className="p-4 text-right">Receita Gerada</th>
                                     <th className="p-4 text-right">Pagamento (Est.)</th>
@@ -195,9 +196,9 @@ export const Reports: React.FC = () => {
                     </div>
                 )}
 
-                {reportType === 'patients' && (
+                {reportType === 'utentes' && (
                     <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
-                         <p className="text-gray-900 font-bold text-xl">{patients.length} Pacientes Registados</p>
+                         <p className="text-gray-900 font-bold text-xl">{utentes.length} Utentes Registados</p>
                          <p className="text-xs text-gray-400 mt-2">Use o botão "Exportar" para ver a lista completa.</p>
                     </div>
                 )}

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
@@ -10,7 +11,7 @@ import pt from 'date-fns/locale/pt';
 import { Modal } from '../components/ui/Modal';
 
 export const Billing: React.FC = () => {
-  const { sessions, users, currentUser, patients } = useApp();
+  const { sessions, users, currentUser, utentes } = useApp();
   const isAdmin = currentUser?.role === UserRole.ADMIN;
   const [detailsModal, setDetailsModal] = useState<string | null>(null);
 
@@ -20,7 +21,7 @@ export const Billing: React.FC = () => {
   // Filter sessions based on role
   const relevantSessions = isAdmin 
     ? sessions 
-    : sessions.filter(s => s.therapistId === currentUser?.id);
+    : sessions.filter(s => s.profissionalId === currentUser?.id);
 
   const monthSessions = relevantSessions.filter(s => {
     const d = new Date(s.date);
@@ -39,7 +40,7 @@ export const Billing: React.FC = () => {
       const profit = totalRevenue - totalTherapistCost;
 
       metric1 = { id: 'revenue', title: 'Receita Total', value: `€${totalRevenue.toFixed(2)}`, icon: Euro, color: iconBgClass, subtitle: 'Receita da clínica' };
-      metric2 = { id: 'payments', title: 'Pagamentos a Terapeutas', value: `€${totalTherapistCost.toFixed(2)}`, icon: TrendingDown, color: iconBgClass, subtitle: 'Custos operacionais' };
+      metric2 = { id: 'payments', title: 'Pagamentos a Profissionais', value: `€${totalTherapistCost.toFixed(2)}`, icon: TrendingDown, color: iconBgClass, subtitle: 'Custos operacionais' };
       metric3 = { id: 'profit', title: 'Lucro Líquido', value: `€${profit.toFixed(2)}`, icon: TrendingUp, color: iconBgClass, subtitle: 'Após pagamentos' };
   } else {
       const myEarnings = monthSessions.reduce((acc, s) => acc + s.therapistPayment, 0);
@@ -78,20 +79,20 @@ export const Billing: React.FC = () => {
     });
   }
 
-  const getPatientName = (id: string) => patients.find(p => p.id === id)?.name || 'Desconhecido';
-  const getTherapistName = (id: string) => users.find(u => u.id === id)?.name || 'Desconhecido';
+  const getUtenteName = (id: string) => utentes.find(p => p.id === id)?.name || 'Desconhecido';
+  const getProfissionalName = (id: string) => users.find(u => u.id === id)?.name || 'Desconhecido';
 
   // Helpers for Sidebar Stats
-  const therapistStats = users.filter(u => u.role === UserRole.THERAPIST).map(t => {
-      const tSessions = monthSessions.filter(s => s.therapistId === t.id);
+  const profissionalStats = users.filter(u => u.role === UserRole.PROFISSIONAL).map(t => {
+      const tSessions = monthSessions.filter(s => s.profissionalId === t.id);
       const tRevenue = tSessions.reduce((acc, s) => acc + s.cost, 0);
       return { id: t.id, name: t.name, revenue: tRevenue, count: tSessions.length };
   }).sort((a,b) => b.revenue - a.revenue);
 
-  const topPatients = patients
-    .filter(p => isAdmin || p.therapistId === currentUser?.id)
+  const topUtentes = utentes
+    .filter(p => isAdmin || p.profissionalId === currentUser?.id)
     .map(p => {
-        const pSessions = monthSessions.filter(s => s.patientId === p.id);
+        const pSessions = monthSessions.filter(s => s.utenteId === p.id);
         return { id: p.id, name: p.name, count: pSessions.length };
     })
     .filter(p => p.count > 0)
@@ -159,15 +160,15 @@ export const Billing: React.FC = () => {
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 mb-6">
-                  {isAdmin ? 'Desempenho por Terapeuta (Mês Atual)' : 'Top Pacientes (Mês Atual)'}
+                  {isAdmin ? 'Desempenho por Profissional (Mês Atual)' : 'Top Utentes (Mês Atual)'}
               </h3>
                
                {isAdmin ? (
                    <div className="space-y-4">
-                       {therapistStats.length === 0 ? (
+                       {profissionalStats.length === 0 ? (
                            <p className="text-gray-500 text-center py-8">Sem dados.</p>
                        ) : (
-                           therapistStats.map(t => (
+                           profissionalStats.map(t => (
                                <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                    <div className="flex items-center gap-3">
                                        <div className="h-8 w-8 rounded-full bg-blue-50 text-[#1e3a5f] flex items-center justify-center font-bold text-xs">
@@ -185,10 +186,10 @@ export const Billing: React.FC = () => {
                    </div>
                ) : (
                    <div className="space-y-4">
-                       {topPatients.length === 0 ? (
+                       {topUtentes.length === 0 ? (
                            <p className="text-gray-500 text-center py-8">Sem dados.</p>
                        ) : (
-                           topPatients.map(p => (
+                           topUtentes.map(p => (
                                <div key={p.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                    <div className="flex items-center gap-3">
                                        <div className="h-8 w-8 rounded-full bg-blue-50 text-[#1e3a5f] flex items-center justify-center font-bold text-xs">
@@ -211,7 +212,7 @@ export const Billing: React.FC = () => {
         onClose={() => setDetailsModal(null)} 
         title={
             detailsModal === 'revenue' ? 'Detalhe de Receita' :
-            detailsModal === 'payments' ? 'Pagamentos a Terapeutas' :
+            detailsModal === 'payments' ? 'Pagamentos a Profissionais' :
             detailsModal === 'profit' ? 'Análise de Lucro' :
             detailsModal === 'earnings' ? 'Meus Ganhos Detalhados' : 'Detalhes'
         }
@@ -223,8 +224,8 @@ export const Billing: React.FC = () => {
                       <thead className="bg-gray-50 text-gray-700 font-semibold border-b">
                           <tr>
                               <th className="p-3 text-gray-700">Data</th>
-                              <th className="p-3 text-gray-700">Paciente</th>
-                              {isAdmin && <th className="p-3 text-gray-700">Terapeuta</th>}
+                              <th className="p-3 text-gray-700">Utente</th>
+                              {isAdmin && <th className="p-3 text-gray-700">Profissional</th>}
                               <th className="p-3 text-right text-gray-700">Valor</th>
                           </tr>
                       </thead>
@@ -240,8 +241,8 @@ export const Billing: React.FC = () => {
                               return (
                                 <tr key={s.id} className="border-b hover:bg-gray-50">
                                     <td className="p-3 text-gray-700">{format(new Date(s.date), 'dd/MM/yyyy')}</td>
-                                    <td className="p-3 font-medium text-[#1e3a5f]">{getPatientName(s.patientId)}</td>
-                                    {isAdmin && <td className="p-3 text-gray-700">{getTherapistName(s.therapistId)}</td>}
+                                    <td className="p-3 font-medium text-[#1e3a5f]">{getUtenteName(s.utenteId)}</td>
+                                    {isAdmin && <td className="p-3 text-gray-700">{getProfissionalName(s.profissionalId)}</td>}
                                     <td className="p-3 text-right text-gray-700 font-medium">€{value.toFixed(2)}</td>
                                 </tr>
                               );

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { UserRole, Session, Patient, Appointment } from '../types';
+import { UserRole, Session, Utente, Appointment } from '../types';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { Input, TextArea } from '../components/ui/Input';
@@ -88,33 +88,33 @@ const QuickAction: React.FC<{
 };
 
 export const Dashboard: React.FC = () => {
-  const { currentUser, patients, sessions, appointments, users, addPatient, addSession, addAppointment, deleteAppointment, showToast } = useApp();
+  const { currentUser, utentes, sessions, appointments, users, addUtente, addSession, addAppointment, deleteAppointment, showToast } = useApp();
   const navigate = useNavigate();
   
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
   // --- DATA FILTERING BASED ON ROLE ---
   
-  const myPatients = isAdmin 
-    ? patients 
-    : patients.filter(p => p.therapistId === currentUser?.id);
+  const myUtentes = isAdmin 
+    ? utentes 
+    : utentes.filter(p => p.profissionalId === currentUser?.id);
 
   const mySessions = isAdmin 
     ? sessions 
-    : sessions.filter(s => s.therapistId === currentUser?.id);
+    : sessions.filter(s => s.profissionalId === currentUser?.id);
 
   const myAppointments = isAdmin 
     ? appointments 
-    : appointments.filter(a => a.therapistId === currentUser?.id);
+    : appointments.filter(a => a.profissionalId === currentUser?.id);
 
   // View States
   const [viewSession, setViewSession] = useState<Session | null>(null);
   
   // Modal States
-  const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+  const [isUtenteModalOpen, setIsUtenteModalOpen] = useState(false);
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
-  const [activeStatModal, setActiveStatModal] = useState<'patients' | 'sessions' | 'appointments' | 'financial' | null>(null);
+  const [activeStatModal, setActiveStatModal] = useState<'utentes' | 'sessions' | 'appointments' | 'financial' | null>(null);
   
   // Conversion Modal State
   const [convertApt, setConvertApt] = useState<Appointment | null>(null);
@@ -125,18 +125,18 @@ export const Dashboard: React.FC = () => {
   });
 
   // Forms Data
-  const initialPatientForm: Omit<Patient, 'id'> = {
-    name: '', birthDate: '', age: 0, phone: '', email: '', responsibleName: '', therapistId: '', costPerSession: 0, diagnosis: '', address: '', clinicalNotes: '', active: true
+  const initialUtenteForm: Omit<Utente, 'id'> = {
+    name: '', birthDate: '', age: 0, phone: '', email: '', responsibleName: '', profissionalId: '', diagnosis: '', address: '', clinicalNotes: '', active: true
   };
-  const [patientForm, setPatientForm] = useState(initialPatientForm);
+  const [utenteForm, setUtenteForm] = useState(initialUtenteForm);
 
   const initialSessionForm: Omit<Session, 'id'> = {
-    patientId: '', therapistId: currentUser?.id || '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', durationMinutes: 60, activities: '', progressNotes: '', homework: '', status: 'COMPLETED', cost: 0, therapistPayment: 0
+    utenteId: '', profissionalId: currentUser?.id || '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', durationMinutes: 60, activities: '', progressNotes: '', homework: '', status: 'COMPLETED', cost: 0, therapistPayment: 0
   };
   const [sessionForm, setSessionForm] = useState(initialSessionForm);
 
   const initialAptForm: Omit<Appointment, 'id' | 'status'> = {
-    patientId: '', therapistId: currentUser?.id || '', date: format(new Date(), 'yyyy-MM-dd'), time: '09:00', durationMinutes: 60, notes: ''
+    utenteId: '', profissionalId: currentUser?.id || '', date: format(new Date(), 'yyyy-MM-dd'), time: '09:00', durationMinutes: 60, notes: ''
   };
   const [aptForm, setAptForm] = useState(initialAptForm);
 
@@ -144,9 +144,9 @@ export const Dashboard: React.FC = () => {
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
   
-  // 1. Active Patients
-  const activePatientsCount = myPatients.filter(p => p.active).length;
-  const totalPatientsCount = myPatients.length;
+  // 1. Active Utentes
+  const activeUtentesCount = myUtentes.filter(p => p.active).length;
+  const totalUtentesCount = myUtentes.length;
 
   // 2. Sessions (Current Month vs Last Month)
   const currentMonth = today.getMonth();
@@ -204,41 +204,41 @@ export const Dashboard: React.FC = () => {
     .filter(a => a.date === todayStr && a.status === 'PENDING')
     .sort((a, b) => a.time.localeCompare(b.time));
 
-  const getPatientName = (id: string) => patients.find(p => p.id === id)?.name || 'Desconhecido';
-  const getTherapistName = (id: string) => users.find(u => u.id === id)?.name || 'Desconhecido';
+  const getUtenteName = (id: string) => utentes.find(p => p.id === id)?.name || 'Desconhecido';
+  const getProfissionalName = (id: string) => users.find(u => u.id === id)?.name || 'Desconhecido';
 
   // Handlers
-  const handleOpenPatientModal = () => {
-    setPatientForm({
-        ...initialPatientForm,
-        therapistId: isAdmin ? '' : currentUser?.id || ''
+  const handleOpenUtenteModal = () => {
+    setUtenteForm({
+        ...initialUtenteForm,
+        profissionalId: isAdmin ? '' : currentUser?.id || ''
     });
-    setIsPatientModalOpen(true);
+    setIsUtenteModalOpen(true);
   };
 
-  const handlePatientSubmit = (e: React.FormEvent) => {
+  const handleUtenteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addPatient({ ...patientForm, id: Math.random().toString(36).substr(2, 9) });
-    showToast('Paciente criado com sucesso!');
-    setIsPatientModalOpen(false);
+    addUtente({ ...utenteForm, id: Math.random().toString(36).substr(2, 9) });
+    showToast('Utente criado com sucesso!');
+    setIsUtenteModalOpen(false);
   };
 
   const handleOpenSessionModal = () => {
-    setSessionForm({ ...initialSessionForm, therapistId: currentUser?.id || '' });
+    setSessionForm({ ...initialSessionForm, profissionalId: currentUser?.id || '' });
     setIsSessionModalOpen(true);
   };
 
-  const handleSessionPatientChange = (patientId: string) => {
-    const patient = patients.find(p => p.id === patientId);
-    const therapistId = isAdmin ? sessionForm.therapistId : currentUser?.id; 
-    const therapist = users.find(u => u.id === therapistId);
+  const handleSessionUtenteChange = (utenteId: string) => {
+    const utente = utentes.find(p => p.id === utenteId);
+    const profissionalId = isAdmin ? sessionForm.profissionalId : currentUser?.id; 
+    const profissional = users.find(u => u.id === profissionalId);
 
     setSessionForm(prev => ({
         ...prev,
-        patientId,
-        therapistId: therapistId || '',
-        cost: patient ? patient.costPerSession : 0,
-        therapistPayment: therapist ? (therapist.paymentPerSession || 0) : 0
+        utenteId,
+        profissionalId: profissionalId || '',
+        cost: 0, // Cost is now determined by session type
+        therapistPayment: profissional ? (profissional.paymentPerSession || 0) : 0
     }));
   };
 
@@ -246,7 +246,7 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     const finalSession = {
         ...sessionForm,
-        therapistId: isAdmin ? sessionForm.therapistId : currentUser?.id || '',
+        profissionalId: isAdmin ? sessionForm.profissionalId : currentUser?.id || '',
         id: Math.random().toString(36).substr(2, 9)
     };
     addSession(finalSession);
@@ -255,7 +255,7 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleOpenAppointmentModal = () => {
-    setAptForm({ ...initialAptForm, therapistId: currentUser?.id || '' });
+    setAptForm({ ...initialAptForm, profissionalId: currentUser?.id || '' });
     setIsAppointmentModalOpen(true);
   };
 
@@ -263,7 +263,7 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     const finalApt = {
         ...aptForm,
-        therapistId: isAdmin ? aptForm.therapistId : currentUser?.id || '',
+        profissionalId: isAdmin ? aptForm.profissionalId : currentUser?.id || '',
         id: Math.random().toString(36).substr(2, 9),
         status: 'PENDING' as const
     };
@@ -282,13 +282,13 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!convertApt) return;
 
-    const patient = patients.find(p => p.id === convertApt.patientId);
-    const therapist = users.find(u => u.id === convertApt.therapistId);
+    const utente = utentes.find(p => p.id === convertApt.utenteId);
+    const profissional = users.find(u => u.id === convertApt.profissionalId);
 
     addSession({
         id: Math.random().toString(36).substr(2, 9),
-        patientId: convertApt.patientId,
-        therapistId: convertApt.therapistId,
+        utenteId: convertApt.utenteId,
+        profissionalId: convertApt.profissionalId,
         date: convertApt.date,
         startTime: convertApt.time,
         durationMinutes: convertApt.durationMinutes,
@@ -296,8 +296,8 @@ export const Dashboard: React.FC = () => {
         activities: convertForm.activities || '',
         progressNotes: convertForm.progressNotes || '',
         homework: convertForm.homework || '',
-        cost: patient?.costPerSession || 0,
-        therapistPayment: therapist?.paymentPerSession || 0
+        cost: 0, // Cost is determined by session type
+        therapistPayment: profissional?.paymentPerSession || 0
     });
 
     deleteAppointment(convertApt.id);
@@ -320,12 +320,12 @@ export const Dashboard: React.FC = () => {
       {/* Stats Grid - Uniform Colors */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatCard 
-          title="Pacientes Ativos" 
-          value={activePatientsCount} 
-          subtitle={`Total registados: ${totalPatientsCount}`}
+          title="Utentes Ativos" 
+          value={activeUtentesCount} 
+          subtitle={`Total registados: ${totalUtentesCount}`}
           icon={Users} 
           colorClass="bg-blue-50 text-[#1e3a5f]"
-          onClick={() => setActiveStatModal('patients')}
+          onClick={() => setActiveStatModal('utentes')}
         />
         <StatCard 
           title="Sessões este Mês" 
@@ -358,9 +358,9 @@ export const Dashboard: React.FC = () => {
          <h2 className="text-lg font-bold text-gray-900 mb-3 md:mb-4">Ações Rápidas</h2>
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <QuickAction 
-              title="Novo Paciente" 
+              title="Novo Utente" 
               desc="Adicionar ficha" 
-              onClick={handleOpenPatientModal}
+              onClick={handleOpenUtenteModal}
               icon={Plus} 
               colorClass="bg-blue-50 text-[#1e3a5f]" 
             />
@@ -413,20 +413,20 @@ export const Dashboard: React.FC = () => {
                     </div>
                 ) : (
                     todaysAppointments.map(apt => {
-                        const patient = patients.find(p => p.id === apt.patientId);
+                        const utente = utentes.find(p => p.id === apt.utenteId);
                         return (
                             <div key={apt.id} className="flex items-center justify-between p-3 md:p-4 bg-white rounded-lg border border-gray-100 hover:border-blue-200 transition-colors group">
-                                <div className="flex items-start flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/patients/${apt.patientId}`)}>
+                                <div className="flex items-start flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/utentes/${apt.utenteId}`)}>
                                     <div className="bg-blue-50 p-2 rounded-lg text-center min-w-[55px] mr-3 shadow-sm border border-blue-100">
                                         <span className="block text-sm font-bold text-[#1e3a5f]">{apt.time}</span>
                                         <span className="block text-[10px] text-gray-500">{apt.durationMinutes}m</span>
                                     </div>
                                     <div className="min-w-0">
-                                        <h4 className="font-semibold text-gray-900 truncate hover:text-[#1e3a5f] transition-colors">{patient?.name}</h4>
+                                        <h4 className="font-semibold text-gray-900 truncate hover:text-[#1e3a5f] transition-colors">{utente?.name}</h4>
                                         <p className="text-xs text-gray-600 mt-1 truncate">{apt.notes || 'Sessão agendada'}</p>
                                         <div className="flex items-center mt-2 text-xs text-gray-500 truncate">
                                             <User size={12} className="mr-1 flex-shrink-0" />
-                                            {getTherapistName(apt.therapistId)}
+                                            {getProfissionalName(apt.profissionalId)}
                                         </div>
                                     </div>
                                 </div>
@@ -465,7 +465,7 @@ export const Dashboard: React.FC = () => {
               </div>
             ) : (
               recentSessions.map(session => {
-                const patient = patients.find(p => p.id === session.patientId);
+                const utente = utentes.find(p => p.id === session.utenteId);
                 return (
                   <div 
                     key={session.id} 
@@ -474,10 +474,10 @@ export const Dashboard: React.FC = () => {
                   >
                     <div className="flex items-center min-w-0">
                       <div className="h-10 w-10 rounded-full bg-blue-100 text-[#1e3a5f] flex items-center justify-center font-bold mr-3 flex-shrink-0">
-                        {patient?.name.charAt(0)}
+                        {utente?.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{patient?.name}</p>
+                        <p className="font-semibold text-gray-900 truncate">{utente?.name}</p>
                         <p className="text-xs text-gray-500 truncate">
                           {format(new Date(session.date), 'dd/MM/yyyy')} • {session.durationMinutes} min
                         </p>
@@ -501,7 +501,7 @@ export const Dashboard: React.FC = () => {
         isOpen={!!activeStatModal} 
         onClose={() => setActiveStatModal(null)} 
         title={
-            activeStatModal === 'patients' ? 'Pacientes Ativos' :
+            activeStatModal === 'utentes' ? 'Utentes Ativos' :
             activeStatModal === 'sessions' ? 'Sessões do Mês' :
             activeStatModal === 'appointments' ? 'Agendamentos' :
             isAdmin ? 'Receita Mensal' : 'Meus Ganhos'
@@ -509,15 +509,15 @@ export const Dashboard: React.FC = () => {
         maxWidth="lg"
       >
         <div className="overflow-y-auto max-h-[60vh] space-y-3 p-1">
-           {activeStatModal === 'patients' && (
+           {activeStatModal === 'utentes' && (
               <>
-                {myPatients.filter(p => p.active).length === 0 ? (
-                  <div className="text-center text-gray-400 py-8">Nenhum paciente ativo.</div>
+                {myUtentes.filter(p => p.active).length === 0 ? (
+                  <div className="text-center text-gray-400 py-8">Nenhum utente ativo.</div>
                 ) : (
-                  myPatients.filter(p => p.active).map(p => (
+                  myUtentes.filter(p => p.active).map(p => (
                     <div 
                         key={p.id} 
-                        onClick={() => { setActiveStatModal(null); navigate(`/patients/${p.id}`); }}
+                        onClick={() => { setActiveStatModal(null); navigate(`/utentes/${p.id}`); }}
                         className="flex items-center justify-between p-3 bg-white border border-gray-300 rounded-xl shadow-sm cursor-pointer hover:bg-gray-50"
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -557,7 +557,7 @@ export const Dashboard: React.FC = () => {
                            <Calendar size={18} />
                          </div>
                          <div className="min-w-0">
-                           <h4 className="font-bold text-gray-900 text-sm truncate">{getPatientName(s.patientId)}</h4>
+                           <h4 className="font-bold text-gray-900 text-sm truncate">{getUtenteName(s.utenteId)}</h4>
                            <p className="text-xs text-gray-900 truncate">
                              {format(new Date(s.date), 'dd/MM')} • {s.activities}
                            </p>
@@ -578,7 +578,7 @@ export const Dashboard: React.FC = () => {
                   upcomingAppointments.map(a => (
                     <div 
                         key={a.id} 
-                        onClick={() => { setActiveStatModal(null); navigate(`/patients/${a.patientId}`); }}
+                        onClick={() => { setActiveStatModal(null); navigate(`/utentes/${a.utenteId}`); }}
                         className="flex items-center justify-between p-3 bg-white border border-gray-300 rounded-xl shadow-sm cursor-pointer hover:bg-gray-50"
                     >
                        <div className="flex items-center gap-3 min-w-0">
@@ -586,7 +586,7 @@ export const Dashboard: React.FC = () => {
                              <span className="block font-bold text-gray-900 text-xs">{a.time}</span>
                           </div>
                           <div className="min-w-0">
-                             <h4 className="font-bold text-gray-900 text-sm truncate">{getPatientName(a.patientId)}</h4>
+                             <h4 className="font-bold text-gray-900 text-sm truncate">{getUtenteName(a.utenteId)}</h4>
                              <p className="text-xs text-gray-900 truncate">{format(new Date(a.date), 'dd/MM')} • {a.durationMinutes} min</p>
                           </div>
                        </div>
@@ -606,8 +606,8 @@ export const Dashboard: React.FC = () => {
                            <Euro size={16} />
                         </div>
                         <div className="min-w-0">
-                           <h4 className="font-bold text-gray-900 text-sm truncate">{getPatientName(s.patientId)}</h4>
-                           <p className="text-xs text-gray-900 truncate">{format(new Date(s.date), 'dd/MM')} {isAdmin && `• ${getTherapistName(s.therapistId).split(' ')[0]}`}</p>
+                           <h4 className="font-bold text-gray-900 text-sm truncate">{getUtenteName(s.utenteId)}</h4>
+                           <p className="text-xs text-gray-900 truncate">{format(new Date(s.date), 'dd/MM')} {isAdmin && `• ${getProfissionalName(s.profissionalId).split(' ')[0]}`}</p>
                         </div>
                      </div>
                      <span className="font-bold text-gray-900 text-sm ml-2">€{(isAdmin ? s.cost : s.therapistPayment).toFixed(2)}</span>
@@ -631,10 +631,10 @@ export const Dashboard: React.FC = () => {
           <div className="space-y-4 md:space-y-6">
              <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
                 <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xl">
-                  {getPatientName(viewSession.patientId).charAt(0)}
+                  {getUtenteName(viewSession.utenteId).charAt(0)}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">{getPatientName(viewSession.patientId)}</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{getUtenteName(viewSession.utenteId)}</h3>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm text-gray-500">
                     <span className="flex items-center gap-1"><Calendar size={14} /> {format(new Date(viewSession.date), 'dd/MM/yyyy')}</span>
                     <span className="flex items-center gap-1"><Clock size={14} /> {viewSession.startTime} ({viewSession.durationMinutes} min)</span>
@@ -645,8 +645,8 @@ export const Dashboard: React.FC = () => {
              {/* ... Mobile optimized grids for details ... */}
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-3 rounded-lg">
-                   <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><User size={12} /> Terapeuta</p>
-                   <p className="font-medium text-gray-900">{getTherapistName(viewSession.therapistId)}</p>
+                   <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><User size={12} /> Profissional</p>
+                   <p className="font-medium text-gray-900">{getProfissionalName(viewSession.profissionalId)}</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg">
                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><Euro size={12} /> Valor</p>
@@ -674,28 +674,28 @@ export const Dashboard: React.FC = () => {
       </Modal>
       
       {/* Other modals kept similar but ensure inputs have full width on mobile */}
-      <Modal isOpen={isPatientModalOpen} onClose={() => setIsPatientModalOpen(false)} title="Novo Paciente" maxWidth="2xl">
-        <form onSubmit={handlePatientSubmit} className="space-y-4">
+      <Modal isOpen={isUtenteModalOpen} onClose={() => setIsUtenteModalOpen(false)} title="Novo Utente" maxWidth="2xl">
+        <form onSubmit={handleUtenteSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Nome Completo *" value={patientForm.name} onChange={e => setPatientForm({...patientForm, name: e.target.value})} required />
-            <Input label="Data de Nascimento *" type="date" value={patientForm.birthDate} onChange={e => setPatientForm({...patientForm, birthDate: e.target.value})} required />
-            <Input label="Idade" type="number" value={patientForm.age} onChange={e => setPatientForm({...patientForm, age: parseInt(e.target.value)})} />
-            <Input label="Nome do Responsável *" value={patientForm.responsibleName} onChange={e => setPatientForm({...patientForm, responsibleName: e.target.value})} required />
-            <Input label="Telefone" value={patientForm.phone} onChange={e => setPatientForm({...patientForm, phone: e.target.value})} />
-            <Input label="Email" type="email" value={patientForm.email} onChange={e => setPatientForm({...patientForm, email: e.target.value})} />
+            <Input label="Nome Completo *" value={utenteForm.name} onChange={e => setUtenteForm({...utenteForm, name: e.target.value})} required />
+            <Input label="Data de Nascimento *" type="date" value={utenteForm.birthDate} onChange={e => setUtenteForm({...utenteForm, birthDate: e.target.value})} required />
+            <Input label="Idade" type="number" value={utenteForm.age} onChange={e => setUtenteForm({...utenteForm, age: parseInt(e.target.value)})} />
+            <Input label="Nome do Responsável *" value={utenteForm.responsibleName} onChange={e => setUtenteForm({...utenteForm, responsibleName: e.target.value})} required />
+            <Input label="Telefone" value={utenteForm.phone} onChange={e => setUtenteForm({...utenteForm, phone: e.target.value})} />
+            <Input label="Email" type="email" value={utenteForm.email} onChange={e => setUtenteForm({...utenteForm, email: e.target.value})} />
           </div>
           {/* ... rest of form ... */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">Terapeuta</label>
+               <label className="block text-sm font-medium text-gray-700 mb-1">Profissional</label>
                {isAdmin ? (
                    <select 
                      className="w-full bg-white text-gray-900 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-[#1e3a5f] focus:border-[#1e3a5f]"
-                     value={patientForm.therapistId}
-                     onChange={e => setPatientForm({...patientForm, therapistId: e.target.value})}
+                     value={utenteForm.profissionalId}
+                     onChange={e => setUtenteForm({...utenteForm, profissionalId: e.target.value})}
                    >
                      <option value="">Selecione</option>
-                     {users.filter(u => u.role === UserRole.THERAPIST).map(u => (
+                     {users.filter(u => u.role === UserRole.PROFISSIONAL).map(u => (
                        <option key={u.id} value={u.id}>{u.name}</option>
                      ))}
                    </select>
@@ -703,17 +703,14 @@ export const Dashboard: React.FC = () => {
                    <Input value={currentUser?.name} disabled className="bg-gray-100" />
                )}
              </div>
-             {isAdmin && (
-                <Input label="Custo por Sessão (€)" type="number" value={patientForm.costPerSession} onChange={e => setPatientForm({...patientForm, costPerSession: parseFloat(e.target.value)})} />
-             )}
           </div>
           
-          <Input label="Diagnóstico" value={patientForm.diagnosis} onChange={e => setPatientForm({...patientForm, diagnosis: e.target.value})} />
-          <Input label="Morada" value={patientForm.address} onChange={e => setPatientForm({...patientForm, address: e.target.value})} />
-          <TextArea label="Observações Clínicas" rows={3} value={patientForm.clinicalNotes} onChange={e => setPatientForm({...patientForm, clinicalNotes: e.target.value})} />
+          <Input label="Diagnóstico" value={utenteForm.diagnosis} onChange={e => setUtenteForm({...utenteForm, diagnosis: e.target.value})} />
+          <Input label="Morada" value={utenteForm.address} onChange={e => setUtenteForm({...utenteForm, address: e.target.value})} />
+          <TextArea label="Observações Clínicas" rows={3} value={utenteForm.clinicalNotes} onChange={e => setUtenteForm({...utenteForm, clinicalNotes: e.target.value})} />
           
           <div className="flex justify-end gap-3 mt-6">
-            <Button type="button" variant="secondary" onClick={() => setIsPatientModalOpen(false)}>Cancelar</Button>
+            <Button type="button" variant="secondary" onClick={() => setIsUtenteModalOpen(false)}>Cancelar</Button>
             <Button type="submit">Guardar</Button>
           </div>
         </form>
@@ -727,15 +724,15 @@ export const Dashboard: React.FC = () => {
                {/* ... Inputs ... */}
                {/* Ensure grids are responsive */}
               <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Paciente *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Utente *</label>
                   <select 
                       className="w-full bg-white text-gray-900 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-[#1e3a5f] focus:border-[#1e3a5f]"
-                      value={sessionForm.patientId}
-                      onChange={(e) => handleSessionPatientChange(e.target.value)}
+                      value={sessionForm.utenteId}
+                      onChange={(e) => handleSessionUtenteChange(e.target.value)}
                       required
                   >
                       <option value="">Selecione</option>
-                      {myPatients.filter(p => p.active).map(p => (
+                      {myUtentes.filter(p => p.active).map(p => (
                           <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
                   </select>
@@ -769,15 +766,15 @@ export const Dashboard: React.FC = () => {
       <Modal isOpen={isAppointmentModalOpen} onClose={() => setIsAppointmentModalOpen(false)} title="Novo Agendamento">
             <form onSubmit={handleAppointmentSubmit} className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Paciente *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Utente *</label>
                     <select 
                         className="w-full bg-white text-gray-900 rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-[#1e3a5f]"
-                        value={aptForm.patientId}
-                        onChange={e => setAptForm({...aptForm, patientId: e.target.value})}
+                        value={aptForm.utenteId}
+                        onChange={e => setAptForm({...aptForm, utenteId: e.target.value})}
                         required
                     >
                         <option value="">Selecione</option>
-                        {myPatients.filter(p => p.active).map(p => (
+                        {myUtentes.filter(p => p.active).map(p => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
                     </select>
@@ -797,7 +794,7 @@ export const Dashboard: React.FC = () => {
 
       <Modal isOpen={!!convertApt} onClose={() => setConvertApt(null)} title="Registar Sessão Realizada">
           <div className="mb-4 bg-blue-50 p-3 rounded-md text-sm text-blue-800">
-              Convertendo agendamento de <strong>{patients.find(p => p.id === convertApt?.patientId)?.name}</strong>.
+              Convertendo agendamento de <strong>{utentes.find(p => p.id === convertApt?.utenteId)?.name}</strong>.
           </div>
           <form onSubmit={handleConvertSubmit} className="space-y-4">
               <TextArea label="Atividades Realizadas *" value={convertForm.activities} onChange={e => setConvertForm({...convertForm, activities: e.target.value})} required />

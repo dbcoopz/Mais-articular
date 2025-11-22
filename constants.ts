@@ -1,5 +1,11 @@
 
-import { User, UserRole, Patient, Session, Appointment, WaitingListEntry, SessionType } from './types';
+import { User, UserRole, Utente, Session, Appointment, WaitingListEntry, SessionType, Specialty } from './types';
+
+export const INITIAL_SPECIALTIES: Specialty[] = [
+  { id: 'spec1', name: 'Terapia da Fala', color: 'bg-blue-100 text-blue-800' },
+  { id: 'spec2', name: 'Psicologia', color: 'bg-purple-100 text-purple-800' },
+  { id: 'spec3', name: 'Fisioterapia', color: 'bg-green-100 text-green-800' },
+];
 
 export const INITIAL_USERS: User[] = [
   {
@@ -16,8 +22,8 @@ export const INITIAL_USERS: User[] = [
     name: 'Matilde Costa',
     email: 'matilde@maisarticular.com',
     password: 'user',
-    role: UserRole.THERAPIST,
-    specialty: 'Terapia da Fala Infantil',
+    role: UserRole.PROFISSIONAL,
+    specialtyId: 'spec1', // Terapia da Fala
     licenseNumber: 'TF12345',
     phone: '+351 912 345 678',
     paymentPerSession: 25,
@@ -26,16 +32,16 @@ export const INITIAL_USERS: User[] = [
   },
   {
     id: 'u3',
-    name: 'Terapeuta Demo',
-    email: 'terapeuta@maisarticular.com',
+    name: 'Profissional Demo',
+    email: 'profissional@maisarticular.com',
     password: 'demo',
-    role: UserRole.THERAPIST,
-    specialty: 'Terapia da Fala Geral',
+    role: UserRole.PROFISSIONAL,
+    specialtyId: 'spec1', // Terapia da Fala
     licenseNumber: 'TF99999',
     phone: '+351 910 000 000',
     paymentPerSession: 30,
     active: true,
-    bio: 'Conta de demonstração para terapeutas.'
+    bio: 'Conta de demonstração para profissionais.'
   }
 ];
 
@@ -43,6 +49,7 @@ export const INITIAL_SESSION_TYPES: SessionType[] = [
   {
     id: 'st1',
     name: 'Sessão Terapia da Fala (45min)',
+    specialtyId: 'spec1',
     defaultDuration: 45,
     defaultCost: 45,
     active: true
@@ -50,6 +57,7 @@ export const INITIAL_SESSION_TYPES: SessionType[] = [
   {
     id: 'st2',
     name: 'Avaliação Inicial',
+    specialtyId: 'spec1',
     defaultDuration: 60,
     defaultCost: 60,
     active: true
@@ -57,13 +65,14 @@ export const INITIAL_SESSION_TYPES: SessionType[] = [
   {
     id: 'st3',
     name: 'Sessão de Acompanhamento (30min)',
+    specialtyId: 'spec1',
     defaultDuration: 30,
     defaultCost: 35,
     active: true
   }
 ];
 
-export const INITIAL_PATIENTS: Patient[] = [
+export const INITIAL_UTENTES: Utente[] = [
   {
     id: 'p1',
     name: 'João Silva',
@@ -72,8 +81,7 @@ export const INITIAL_PATIENTS: Patient[] = [
     phone: '911222333',
     email: 'pai.joao@example.com',
     responsibleName: 'Carlos Silva',
-    therapistId: 'u2',
-    costPerSession: 0,
+    profissionalId: 'u2',
     customPrices: {}, // Usa preços padrão
     diagnosis: 'Dislalia',
     address: 'Rua das Flores, 123, Lisboa',
@@ -91,8 +99,7 @@ export const INITIAL_PATIENTS: Patient[] = [
     phone: '911444555',
     email: 'mae.ana@example.com',
     responsibleName: 'Maria Pereira',
-    therapistId: 'u2',
-    costPerSession: 0,
+    profissionalId: 'u2',
     customPrices: { 'st1': 40 }, // Exemplo: Preço especial para sessão normal
     diagnosis: 'Atraso de Desenvolvimento de Linguagem',
     address: 'Av. da Liberdade, 45, Lisboa',
@@ -105,8 +112,8 @@ export const INITIAL_PATIENTS: Patient[] = [
 export const INITIAL_SESSIONS: Session[] = [
   {
     id: 's1',
-    patientId: 'p1',
-    therapistId: 'u2',
+    utenteId: 'p1',
+    profissionalId: 'u2',
     sessionTypeId: 'st1',
     date: '2025-11-17',
     startTime: '14:00',
@@ -120,8 +127,8 @@ export const INITIAL_SESSIONS: Session[] = [
   },
   {
     id: 's2',
-    patientId: 'p2',
-    therapistId: 'u2',
+    utenteId: 'p2',
+    profissionalId: 'u2',
     sessionTypeId: 'st2',
     date: '2025-11-18',
     startTime: '10:00',
@@ -138,8 +145,8 @@ export const INITIAL_SESSIONS: Session[] = [
 export const INITIAL_APPOINTMENTS: Appointment[] = [
   {
     id: 'a1',
-    patientId: 'p1',
-    therapistId: 'u2',
+    utenteId: 'p1',
+    profissionalId: 'u2',
     sessionTypeId: 'st1',
     date: '2025-11-20',
     time: '14:00',
